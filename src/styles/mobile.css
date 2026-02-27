@@ -1,0 +1,111 @@
+/* Mobile-specific styles for the church music system */
+/* Hereda estilos base de main.css, aquí solo overrides */
+
+.container {
+    padding: 10px;
+    max-width: 100%;
+}
+
+.header {
+    text-align: left;
+    padding: 10px 0;
+}
+
+.song-list, .repertoire-list {
+    list-style-type: none;
+    padding: 0;
+}
+
+/* Mejoras en botones para touch */
+@media (max-width: 768px) {
+    .btn {
+        padding: 0.6rem 1rem; /* Área de toque más grande */
+        font-size: 0.9rem;
+    }
+}
+
+/* Responsive Grid */
+@media (max-width: 576px) {
+    .container {
+        padding: 8px;
+    }
+
+    h1 { font-size: 1.8rem; }
+    h2 { font-size: 1.5rem; }
+    h3 { font-size: 1.3rem; }
+
+    .navbar-brand {
+        font-size: 1.2rem;
+    }
+
+    .btn-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-bottom: 1rem;
+    }
+
+    .btn-group .btn {
+        flex: 1;
+        min-width: 70px;
+        padding: 8px 6px;
+        font-size: 12px;
+    }
+
+    .modal-dialog {
+        margin: 10px;
+        width: auto;
+    }
+
+    .form-select, .form-control {
+        font-size: 16px;
+    }
+
+    .lyrics-container {
+        font-size: 12px;
+        line-height: 2rem;
+    }
+
+    .list-group-item {
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    .card {
+        margin-bottom: 0.75rem;
+        padding: 0.75rem;
+    }
+
+    /* Ajuste menú móvil */
+    .navbar-collapse {
+        background-color: rgba(0,0,0,0.1);
+        margin: 0 -1rem;
+        padding: 1rem;
+        border-top: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .ratio {
+        max-height: 300px;
+    }
+}
+
+@media (max-width: 768px) {
+    .col-md-4, .col-md-6 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    .btn-group {
+        flex-direction: column;
+    }
+
+    .btn-group .btn {
+        width: 100%;
+    }
+}
+
+@media (min-width: 769px) {
+    .container {
+        padding: 1.5rem;
+    }
+}

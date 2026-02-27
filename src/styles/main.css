@@ -1,0 +1,224 @@
+:root {
+    --primary-color: #b71c1c; /* Rojo oscuro elegante */
+    --primary-hover: #9a1010;
+    --secondary-color: #ffffff;
+    --accent-color: #ff5252;
+    --text-dark: #2c3e50;
+    --text-muted: #6c757d;
+    --bg-light: #f8f9fa;
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    --radius: 12px;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f6f8;
+    color: var(--text-dark);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Navbar Profesional */
+.custom-navbar {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #8e0000 100%);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    padding: 0.8rem 0;
+}
+
+.navbar-brand {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 1.4rem;
+}
+
+.nav-link {
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+    padding: 0.5rem 1rem !important;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.nav-link:hover, .nav-link.active {
+    background-color: rgba(255,255,255,0.15);
+    color: white !important;
+}
+
+.container {
+    max-width: 1200px;
+    margin: auto;
+}
+
+main {
+    min-height: calc(100vh - 200px);
+}
+
+/* Botones Estilizados */
+.btn {
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 0.5rem 1.2rem;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 4px rgba(183, 28, 28, 0.3);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+.btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* Tarjetas y Contenedores */
+.card, .bg-white {
+    border: none;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.repertoire-card:hover, .list-group-item-action:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    z-index: 1;
+}
+
+.card-title {
+    color: var(--primary-color);
+    font-weight: 700;
+    font-family: 'Montserrat', sans-serif;
+}
+
+/* Listas */
+.list-group-item {
+    border: none;
+    border-bottom: 1px solid #eee;
+    padding: 1rem 1.2rem;
+    margin-bottom: 0;
+}
+
+.list-group-item:first-child { border-top-left-radius: var(--radius); border-top-right-radius: var(--radius); }
+.list-group-item:last-child { border-bottom-left-radius: var(--radius); border-bottom-right-radius: var(--radius); border-bottom: none; }
+
+/* Tabs */
+.nav-tabs {
+    border-bottom: 2px solid #eee;
+}
+
+.nav-tabs .nav-link {
+    border: none;
+    color: var(--text-muted);
+    font-weight: 600;
+    background: transparent;
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--primary-color);
+    border-bottom: 3px solid var(--primary-color);
+    background: transparent;
+}
+
+.nav-tabs .nav-link:hover {
+    color: var(--primary-hover);
+    border-color: transparent;
+}
+
+/* Footer */
+.footer {
+    background-color: white;
+    border-top: 1px solid #eee;
+    padding: 1.5rem 0;
+    margin-top: auto;
+}
+
+/* Utility for hiding elements during export */
+.no-export {
+    display: block;
+}
+
+/* Animaciones */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Hero Section */
+.hero-section {
+    border-left: 5px solid var(--primary-color);
+    background: white;
+}
+
+/* Inputs y Formularios */
+.form-control, .form-select {
+    border-radius: 8px;
+    border: 1px solid #ced4da;
+    padding: 0.6rem 1rem;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(183, 28, 28, 0.15);
+}
+
+/* Badges */
+.badge {
+    font-weight: 500;
+    padding: 0.5em 0.8em;
+    border-radius: 6px;
+}
+
+.bg-secondary {
+    background-color: #e9ecef !important;
+    color: var(--text-dark);
+}
+
+/* Modales */
+.modal-content {
+    border-radius: var(--radius);
+    border: none;
+    box-shadow: var(--shadow-md);
+}
+
+.modal-header {
+    border-bottom: 1px solid #f0f0f0;
+    background-color: #fff;
+    border-top-left-radius: var(--radius);
+    border-top-right-radius: var(--radius);
+}
+
+.modal-footer {
+    border-top: 1px solid #f0f0f0;
+}
+
+.modal-title {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    color: var(--primary-color);
+}

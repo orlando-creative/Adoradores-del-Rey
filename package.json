@@ -1,0 +1,28 @@
+{
+  "name": "church-music-system",
+  "version": "1.0.0",
+  "description": "A web system for managing songs and repertoires for a Christian church.",
+  "main": "src/js/app.js",
+  "scripts": {
+    "start": "live-server --open=public",
+    "build": "echo 'Build process here'",
+    "test": "echo 'No tests specified'"
+  },
+  "keywords": [
+    "church",
+    "music",
+    "songs",
+    "repertoire",
+    "management"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "bootstrap": "^5.1.3",
+    "@supabase/supabase-js": "^2.0.0",
+    "html2canvas": "^1.4.1"
+  },
+  "devDependencies": {
+    "live-server": "^1.2.1"
+  }
+}
