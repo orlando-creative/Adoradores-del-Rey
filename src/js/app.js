@@ -46,18 +46,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     document.getElementById('nav-songs').addEventListener('click', async (e) => {
         e.preventDefault();
+        closeNavbar();
         showView('view-songs');
         await loadSongs();
     });
 
     document.getElementById('nav-repertoires').addEventListener('click', async (e) => {
         e.preventDefault();
+        closeNavbar();
         showView('view-repertoires');
         await loadRepertoires();
     });
 
     document.getElementById('nav-home').addEventListener('click', (e) => {
         e.preventDefault();
+        closeNavbar();
         showView('view-home');
     });
 
@@ -199,6 +202,14 @@ function showView(viewId) {
         document.getElementById(id).classList.add('d-none');
     });
     document.getElementById(viewId).classList.remove('d-none');
+}
+
+function closeNavbar() {
+    const navbarCollapse = document.getElementById('navbarNav');
+    if (navbarCollapse.classList.contains('show')) {
+        const bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse) || new bootstrap.Collapse(navbarCollapse, { toggle: false });
+        bsCollapse.hide();
+    }
 }
 
 async function loadSongs() {
