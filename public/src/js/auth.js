@@ -18,6 +18,16 @@ export async function register(email, password, nombre) {
         }
     });
     if (error) throw error;
+
+    // Asegurar que el perfil se guarde en la base de datos manualmente
+    if (data.user) {
+        await supabase.from('profiles').upsert({
+            id: data.user.id,
+            nombre: nombre,
+            rol: 'user'
+        });
+    }
+
     return data;
 }
 

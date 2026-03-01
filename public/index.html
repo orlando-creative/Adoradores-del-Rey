@@ -3,6 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#343a40"/>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- iOS support -->
+    <link rel="apple-touch-icon" href="/images/icon-192x192.png">
+    <meta name="apple-mobile-web-app-status-bar" content="#343a40">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
     <title>Adoradores Del Rey</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
     <link rel="stylesheet" href="src/styles/main.css">
@@ -28,32 +37,26 @@
         .rep-song-title { font-weight: 800; font-size: 1.8em; line-height: 1.2; }
 
         /* Temas */
-        .theme-classic { background-color: #ffffff; color: #000000; }
-        .theme-classic .rep-song-item:hover { background-color: #f8f9fa; }
-        
-        .theme-dark { background: linear-gradient(to bottom right, #232526, #414345); color: #f8f9fa; }
-        .theme-dark .rep-song-item { border-bottom-color: rgba(255,255,255,0.2); }
-        .theme-dark .rep-song-item:hover { background-color: rgba(255,255,255,0.1); }
-        .theme-dark .text-muted { color: #adb5bd !important; }
-        .theme-dark .badge { background-color: #f8f9fa !important; color: #212529 !important; border-color: #f8f9fa !important; }
+        /* Mañana: Degradado muy claro, texto oscuro */
+        .theme-morning { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); color: #1a1a1a; }
+        .theme-morning .rep-song-item:hover { background-color: rgba(255,255,255,0.5); }
+        .theme-morning .badge { background-color: #fff !important; color: #333 !important; border: 1px solid #999 !important; }
 
-        .theme-blue { background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%); color: #1a252f; }
-        .theme-blue .rep-song-item { border-bottom-color: rgba(0,0,0,0.1); }
-        .theme-blue .rep-song-item:hover { background-color: rgba(255,255,255,0.3); }
+        /* Noche: Negro predominante, texto claro */
+        .theme-night { background: linear-gradient(to bottom, #000000 0%, #1c1c1c 60%, #2c3e50 100%); color: #e0e0e0; }
+        .theme-night .rep-song-item { border-bottom-color: rgba(255,255,255,0.15); }
+        .theme-night .rep-song-item:hover { background-color: rgba(255,255,255,0.1); }
+        .theme-night .text-muted { color: #adb5bd !important; }
+        .theme-night .badge { background-color: #333 !important; color: #fff !important; border: 1px solid #555 !important; }
+        .theme-night .rep-section-header { border-bottom-color: #555; }
 
-        .theme-sunset { background: linear-gradient(120deg, #f6d365 0%, #fda085 100%); color: #4a3b32; }
-        .theme-sunset .rep-song-item { border-bottom-color: rgba(74, 59, 50, 0.2); }
-        .theme-sunset .rep-song-item:hover { background-color: rgba(255,255,255,0.3); }
-
-        .theme-sunrise { background: linear-gradient(to top, #a18cd1 0%, #fbc2eb 100%); color: #3c3b3f; }
-        .theme-sunrise .rep-song-item { border-bottom-color: rgba(0,0,0,0.1); }
-        .theme-sunrise .rep-song-item:hover { background-color: rgba(255,255,255,0.3); }
-        .theme-sunrise .badge { background-color: rgba(255,255,255,0.5) !important; color: #3c3b3f !important; border-color: #3c3b3f !important; }
-
-        .theme-forest { background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%); color: #2a5a4b; }
-        .theme-forest .rep-song-item { border-bottom-color: rgba(42, 90, 75, 0.2); }
-        .theme-forest .rep-song-item:hover { background-color: rgba(255,255,255,0.3); }
-        .theme-forest .badge { background-color: rgba(255,255,255,0.5) !important; color: #2a5a4b !important; border-color: #2a5a4b !important; }
+        /* Especial: Creativo (Morado/Azul elegante) */
+        .theme-special { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; }
+        .theme-special .rep-song-item { border-bottom-color: rgba(255,255,255,0.2); }
+        .theme-special .rep-song-item:hover { background-color: rgba(255,255,255,0.15); }
+        .theme-special .text-muted { color: #e0e0e0 !important; opacity: 0.8; }
+        .theme-special .badge { background-color: rgba(255,255,255,0.25) !important; color: #fff !important; border: 1px solid rgba(255,255,255,0.4) !important; }
+        .theme-special .rep-section-header { border-bottom-color: rgba(255,255,255,0.3); }
 
         /* Ajustes para Móviles (Pantallas pequeñas) */
         @media (max-width: 767px) {
@@ -104,21 +107,21 @@
         }
         .chord-word .lyrics {
             white-space: pre-wrap; /* Respeta espacios y permite wrap */
-            line-height: 1.3;
-            font-size: 1.1em; /* Letra base más grande */
+            line-height: 1.15; /* Líneas de letra más pegadas */
+            font-size: 1.1em;
         }
         .line-wrapper {
-            line-height: 2.8; /* Altura generosa para evitar toques accidentales y superposición */
-            margin-bottom: 1.2em;
+            line-height: 1; /* Altura ajustada al contenido */
+            margin-bottom: 0.5em; /* Menos separación entre versos */
             display: block;
         }
         .lyrics-container {
             font-family: 'Roboto Mono', monospace; /* Alineación precisa */
             /* line-height controlado por line-wrapper */
-            white-space: pre-wrap;
-            overflow-x: hidden; /* Preferir wrap en móvil */
-            overflow-wrap: break-word;
-            padding: 12px !important; /* Maximizar espacio en móvil */
+            white-space: pre; /* Mantiene cada verso en una línea */
+            overflow-x: auto; /* Permite scroll horizontal si la línea es larga */
+            padding: 8px !important; /* Maximizar espacio en móvil */
+            min-height: 300px;
         }
         .lyrics-columns-2 {
             column-count: 2;
@@ -133,19 +136,67 @@
             border-bottom: 1px solid #dee2e6;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
+        
+        /* Estilos para menú lateral (Offcanvas) en móvil y Navbar en escritorio */
+        @media (min-width: 992px) {
+            .navbar-expand-lg .offcanvas {
+                position: static;
+                z-index: auto;
+                flex-grow: 1;
+                width: auto !important;
+                height: auto !important;
+                visibility: visible !important;
+                background-color: transparent !important;
+                border: 0 !important;
+                transform: none !important;
+                transition: none;
+                display: flex !important;
+                flex-direction: row;
+                align-items: center;
+            }
+            .navbar-expand-lg .offcanvas .offcanvas-header {
+                display: none;
+            }
+            .navbar-expand-lg .offcanvas .offcanvas-body {
+                display: flex;
+                flex-grow: 1;
+                padding: 0;
+                overflow-y: visible;
+                justify-content: flex-end;
+            }
+        }
+        
+        @media (max-width: 991.98px) {
+            .offcanvas-end {
+                width: 75%;
+                max-width: 300px;
+                background-color: #212529; /* Fondo oscuro para móvil */
+            }
+        }
+
+        /* Estilos para modo de selección de canciones */
+        #view-songs.selection-mode .song-selection-checkbox {
+            display: inline-block !important; /* Usar inline-block para que no ocupe toda la línea */
+        }
     </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
     <div id="app">
         <header>
-            <nav class="navbar navbar-expand-lg navbar-dark custom-navbar sticky-top">
+            <nav class="navbar navbar-expand-lg navbar-dark custom-navbar py-1">
                 <div class="container-fluid">
-                    <a class="navbar-brand" href="#">Adoradores Del Rey</a>
-                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                        <span class="navbar-toggler-icon"></span>
+                    <a class="navbar-brand fs-6" href="#">Adoradores Del Rey</a>
+                    <button class="navbar-toggler btn-sm border-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+                        <span class="navbar-toggler-icon" style="width: 1em; height: 1em;"></span>
                     </button>
-                    <div class="collapse navbar-collapse" id="navbarNav">
-                        <ul class="navbar-nav ms-auto">
+                    
+                    <div class="offcanvas offcanvas-end text-white" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+                        <div class="offcanvas-header border-bottom border-secondary">
+                            <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menú</h5>
+                            <button type="button" class="btn-close btn-close-white text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                        </div>
+                        <div class="offcanvas-body">
+                            <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
                             <li class="nav-item">
                                 <a class="nav-link active" href="#" id="nav-home">Inicio</a>
                             </li>
@@ -156,9 +207,13 @@
                                 <a class="nav-link" href="#" id="nav-repertoires">Repertorios</a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link" href="#" id="nav-profile">Mi Perfil</a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link" href="#" id="logout-btn">Salir</a>
                             </li>
                         </ul>
+                        </div>
                     </div>
                 </div>
             </nav>
@@ -176,12 +231,20 @@
             <!-- Vista Lista de Canciones -->
             <div id="view-songs" class="d-none">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Canciones</h2>
-                    <div class="btn-group">
+                    <h2 class="h4 mb-0">Canciones</h2>
+                    <div class="btn-group btn-group-sm" id="songs-main-actions">
                         <button id="btn-bulk-import" class="btn btn-outline-danger d-none admin-only">Importar Himnario</button>
-                        <button id="btn-delete-all-hymns" class="btn btn-outline-secondary d-none admin-only">🗑️ Borrar</button>
+                        <button id="btn-select-songs" class="btn btn-outline-secondary d-none admin-only">Seleccionar</button>
                         <button id="btn-add-song" class="btn btn-primary d-none admin-only">+ Nueva Canción</button>
                     </div>
+                    <div class="btn-group btn-group-sm d-none" id="songs-selection-actions">
+                        <button id="btn-delete-selected" class="btn btn-danger">Eliminar Seleccionados</button>
+                        <button id="btn-cancel-selection" class="btn btn-secondary">Cancelar</button>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <input type="text" id="song-list-search" class="form-control form-control-sm" placeholder="🔍 Buscar canción por título...">
                 </div>
                 
                 <ul class="nav nav-tabs mb-3" id="songsTab" role="tablist">
@@ -189,41 +252,48 @@
                         <button class="nav-link active" id="hymns-tab" data-bs-toggle="tab" data-bs-target="#hymns-content" type="button" role="tab">Himnos</button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="worship-tab" data-bs-toggle="tab" data-bs-target="#worship-content" type="button" role="tab">Alabanzas</button>
+                        <button class="nav-link" id="jubilo-tab" data-bs-toggle="tab" data-bs-target="#jubilo-content" type="button" role="tab">Júbilo</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="adoracion-tab" data-bs-toggle="tab" data-bs-target="#adoracion-content" type="button" role="tab">Adoración</button>
                     </li>
                 </ul>
                 <div class="tab-content" id="songsTabContent">
                     <div class="tab-pane fade show active" id="hymns-content" role="tabpanel"><div class="list-group" id="hymns-list"></div></div>
-                    <div class="tab-pane fade" id="worship-content" role="tabpanel"><div class="list-group" id="worship-list"></div></div>
+                    <div class="tab-pane fade" id="jubilo-content" role="tabpanel"><div class="list-group" id="jubilo-list"></div></div>
+                    <div class="tab-pane fade" id="adoracion-content" role="tabpanel"><div class="list-group" id="adoracion-list"></div></div>
                 </div>
             </div>
 
             <!-- Vista Detalle Canción -->
             <div id="view-song-detail" class="d-none">
                 <!-- Barra de Herramientas Estilo App -->
-                <div class="song-tools-bar p-2 mb-3 d-flex gap-2 justify-content-between align-items-center no-export rounded">
-                    <button class="btn btn-outline-secondary btn-sm" id="back-to-songs">&larr;</button>
+                <div class="song-tools-bar p-1 mb-2 d-flex gap-1 justify-content-between align-items-center no-export rounded shadow-sm">
+                    <button class="btn btn-outline-secondary btn-sm border-0" id="back-to-songs" style="font-size: 1.2rem;">&larr;</button>
                     
-                    <div class="btn-group btn-group-sm">
-                        <button class="btn btn-outline-primary fw-bold" id="btn-transpose-menu">Tono</button>
-                        <button class="btn btn-outline-dark" id="btn-font-minus">A-</button>
-                        <button class="btn btn-outline-dark" id="btn-font-plus">A+</button>
+                    <div class="d-flex gap-1 align-items-center">
+                        <button class="btn btn-outline-primary btn-sm fw-bold" id="btn-transpose-menu" style="min-width: 2.5rem;">-</button>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-dark px-2" id="btn-font-minus">A-</button>
+                            <button class="btn btn-outline-dark px-2" id="btn-font-plus">A+</button>
+                        </div>
                     </div>
 
-                    <div class="btn-group btn-group-sm">
-                        <button class="btn btn-outline-dark" id="btn-columns" title="Columnas">Cols</button>
-                        <button class="btn btn-outline-success" id="btn-auto-scroll" title="Auto Scroll">▶</button>
-                    </div>
-                    
-                    <div class="dropdown">
-                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                            <span class="d-none d-sm-inline">Más</span> &#8942;
+                    <div class="d-flex gap-1">
+                        <button class="btn btn-outline-dark btn-sm px-2" id="btn-columns" title="Columnas">II</button>
+                        <button class="btn btn-outline-success btn-sm px-2" id="btn-auto-scroll" title="Auto Scroll">▶</button>
+                        
+                        <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary border-0" type="button" data-bs-toggle="dropdown">
+                            &#8942;
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="#" id="export-png">📥 Exportar Imagen</a></li>
+                            <li><hr class="dropdown-divider admin-only"></li>
                             <li><a class="dropdown-item admin-only" href="#" id="btn-edit-song">✏️ Editar</a></li>
                             <li><a class="dropdown-item admin-only text-danger" href="#" id="btn-delete-song">🗑️ Eliminar</a></li>
                         </ul>
+                        </div>
                     </div>
                 </div>
                 
@@ -236,61 +306,139 @@
             <!-- Vista Lista de Repertorios -->
             <div id="view-repertoires" class="d-none">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Repertorios</h2>
-                    <button id="btn-add-repertoire" class="btn btn-primary d-none admin-only">+ Nuevo Repertorio</button>
+                    <h2 class="h4 mb-0">Repertorios</h2>
+                    <button id="btn-add-repertoire" class="btn btn-primary btn-sm d-none admin-only">+ Nuevo Repertorio</button>
                 </div>
                 <div id="repertoires-list" class="row g-3">
                     <!-- JS llenará esto -->
                 </div>
             </div>
 
+            <!-- Vista Perfil -->
+            <div id="view-profile" class="d-none">
+                <div class="card shadow-sm mx-auto" style="max-width: 600px;">
+                    <div class="card-body p-4">
+                        <h3 class="card-title text-center mb-4">Mi Perfil</h3>
+                        <form id="profile-form">
+                            <div class="mb-3">
+                                <label class="form-label">Correo Electrónico</label>
+                                <input type="email" class="form-control" id="profile-email" readonly disabled>
+                                <div class="form-text">El correo no se puede cambiar.</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Nombre Completo</label>
+                                <input type="text" class="form-control" id="profile-name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Rol</label>
+                                <select class="form-select" id="profile-role" disabled>
+                                    <option value="user">Usuario</option>
+                                    <option value="admin">Administrador</option>
+                                </select>
+                                <div class="form-text">Solo los administradores pueden cambiar el rol.</div>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary" id="btn-save-profile">Guardar Cambios</button>
+                            </div>
+                        </form>
+
+                        <hr class="my-4">
+
+                        <h4 class="text-center mb-3">Cambiar Contraseña</h4>
+                        <form id="password-change-form">
+                            <div class="mb-3">
+                                <label class="form-label">Nueva Contraseña</label>
+                                <input type="password" class="form-control" id="profile-new-password" required minlength="6" placeholder="Mínimo 6 caracteres">
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-outline-danger" id="btn-change-password">Actualizar Contraseña</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
             <!-- Vista Detalle Repertorio -->
             <div id="view-repertoire-detail" class="d-none">
-                <div class="mb-3 no-export d-flex flex-wrap gap-2">
-                    <button class="btn btn-outline-secondary" id="back-to-repertoires">&larr; Volver</button>
-                    <select class="form-select w-auto" id="rep-theme-select">
-                        <option value="theme-classic">Clásico (Impresión)</option>
-                        <option value="theme-dark">Noche (Oscuro)</option>
-                        <option value="theme-blue">Cielo (Azul)</option>
-                        <option value="theme-sunset">Atardecer (Cálido)</option>
-                    <option value="theme-sunrise">Amanecer (Violeta)</option>
-                    <option value="theme-forest">Bosque (Verde)</option>
-                    </select>
-                    <button class="btn btn-outline-primary btn-sm d-none admin-only" id="btn-add-song-to-rep">+ Canción</button>
-                    <button class="btn btn-success" id="export-rep-png">📥 Exportar PNG</button>
-                    <button class="btn btn-outline-danger d-none admin-only" id="btn-delete-rep">🗑️ Eliminar</button>
+                <div class="song-tools-bar p-1 mb-2 d-flex gap-1 justify-content-between align-items-center no-export rounded shadow-sm">
+                    <button class="btn btn-outline-secondary btn-sm border-0" id="back-to-repertoires" style="font-size: 1.2rem;">&larr;</button>
+                    
+                    <div class="d-flex gap-1 align-items-center flex-grow-1 justify-content-end">
+                        <select class="form-select form-select-sm w-auto py-0" id="rep-theme-select" style="height: 30px; font-size: 0.85rem;">
+                            <option value="theme-morning">Mañana (Claro)</option>
+                            <option value="theme-night">Noche (Oscuro)</option>
+                            <option value="theme-special">Especial (Evento)</option>
+                        </select>
+                        
+                        <button class="btn btn-primary btn-sm d-none admin-only px-3" id="btn-add-song-to-rep" title="Agregar Canción">+</button>
+                        <button class="btn btn-success btn-sm d-none" id="btn-save-repertoire-details" title="Guardar">💾</button>
+                        
+                        <div class="dropdown ms-1">
+                            <button class="btn btn-sm btn-outline-secondary border-0" type="button" data-bs-toggle="dropdown">
+                                &#8942;
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item admin-only" href="#" id="btn-edit-repertoire">✏️ Editar Datos</a></li>
+                                <li><a class="dropdown-item" href="#" id="export-rep-png">📥 Exportar Imagen</a></li>
+                                <li><hr class="dropdown-divider admin-only"></li>
+                                <li><a class="dropdown-item admin-only text-danger" href="#" id="btn-delete-rep">🗑️ Eliminar</a></li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
                 
-                <div id="repertoire-content" class="theme-classic p-4 mx-auto shadow-lg" style="max-width: 900px; border-radius: 4px;">
+                <div id="repertoire-content" class="theme-morning p-4 mx-auto shadow-lg" style="max-width: 900px; border-radius: 4px;">
                     <!-- Encabezado -->
                     <div class="text-center mb-4 border-bottom border-2 pb-3" style="border-color: currentColor !important;">
-                        <h1 class="fw-bold text-uppercase mb-3 rep-header-title" id="rep-detail-title">Título</h1>
+                        <h1 class="fw-bold text-uppercase mb-3 rep-header-title" id="rep-detail-title"></h1>
+                        <input type="text" id="edit-rep-title" class="form-control form-control-lg d-none text-center fw-bold text-uppercase mb-3" style="font-size: 2.5rem; letter-spacing: -2px;">
                         <div class="d-flex justify-content-center align-items-center gap-3 gap-md-5 mb-3 flex-wrap">
                             <div class="text-center">
                                 <span class="text-uppercase fw-bold rep-meta-label opacity-75">Fecha</span>
                                 <div id="rep-detail-date" class="fw-bold rep-meta-value"></div>
+                                <input type="date" id="edit-rep-date" class="form-control d-none">
                             </div>
                             <div class="text-center">
                                 <span class="text-uppercase fw-bold rep-meta-label opacity-75">Hora</span>
                                 <div id="rep-detail-time" class="fw-bold rep-meta-value"></div>
+                                <input type="time" id="edit-rep-time" class="form-control d-none">
                             </div>
                         </div>
-                        <div id="rep-uniform-display" class="fw-bold text-uppercase rep-uniform-box" style="display: none;"></div>
+                        <div id="rep-uniform-display" class="fw-bold text-uppercase rep-uniform-box d-none"></div>
+                        <input type="text" id="edit-rep-uniform" class="form-control d-none mt-2" placeholder="Uniforme">
                     </div>
 
                     <!-- Información de Músicos -->
                     <div class="row mb-4 rep-musician-section">
                     <div class="col-md-6 rep-col-divider pb-2 pb-md-0">
                             <h4 class="text-uppercase mb-3 fw-bold rep-musician-title">Dirección y Voces</h4>
-                            <div class="mb-2"><strong>Director:</strong> <span id="rep-director" class="fw-bold"></span></div>
-                            <div class="mb-2"><strong>Coristas:</strong> <span id="rep-singers" class="fw-bold"></span></div>
+                            <div class="mb-2"><strong>Director:</strong> 
+                                <span id="rep-director" class="fw-bold"></span>
+                                <input type="text" id="edit-rep-director" class="form-control form-control-sm d-none" list="musicians-list">
+                            </div>
+                            <div class="mb-2"><strong>Coristas:</strong> 
+                                <span id="rep-singers" class="fw-bold"></span>
+                                <input type="text" id="edit-rep-singers" class="form-control form-control-sm d-none" list="musicians-list" placeholder="Nombres separados por comas">
+                            </div>
                         </div>
                         <div class="col-md-6 ps-md-4">
                             <h4 class="text-uppercase mb-3 fw-bold rep-musician-title">Músicos</h4>
-                            <div class="mb-1"><strong>Piano:</strong> <span id="rep-piano" class="fw-bold"></span></div>
-                            <div class="mb-1"><strong>Guitarra:</strong> <span id="rep-guitar" class="fw-bold"></span></div>
-                            <div class="mb-1"><strong>Bajo:</strong> <span id="rep-bass" class="fw-bold"></span></div>
-                            <div class="mb-1"><strong>Batería:</strong> <span id="rep-drums" class="fw-bold"></span></div>
+                            <div class="mb-1"><strong>Piano:</strong> 
+                                <span id="rep-piano" class="fw-bold"></span>
+                                <input type="text" id="edit-rep-piano" class="form-control form-control-sm d-none" list="musicians-list">
+                            </div>
+                            <div class="mb-1"><strong>Guitarra:</strong> 
+                                <span id="rep-guitar" class="fw-bold"></span>
+                                <input type="text" id="edit-rep-guitar" class="form-control form-control-sm d-none" list="musicians-list">
+                            </div>
+                            <div class="mb-1"><strong>Bajo:</strong> 
+                                <span id="rep-bass" class="fw-bold"></span>
+                                <input type="text" id="edit-rep-bass" class="form-control form-control-sm d-none" list="musicians-list">
+                            </div>
+                            <div class="mb-1"><strong>Batería:</strong> 
+                                <span id="rep-drums" class="fw-bold"></span>
+                                <input type="text" id="edit-rep-drums" class="form-control form-control-sm d-none" list="musicians-list">
+                            </div>
                         </div>
                     </div>
 
@@ -536,9 +684,19 @@
 
     <footer class="footer mt-auto py-3 bg-light">
         <div class="container text-center">
-            <span class="text-muted small">&copy; 2024 Adoradores Del Rey. Todos los derechos reservados.</span>
+            <span class="text-muted small">&copy; 2026 Adoradores Del Rey. Todos los derechos reservados.</span>
         </div>
     </footer>
+
+    <!-- Contenedor de Notificaciones (Toasts) -->
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
+        <div id="liveToast" class="toast align-items-center text-white bg-primary border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" id="toast-body">Hello, world! This is a toast message.</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>

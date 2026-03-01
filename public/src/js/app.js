@@ -15,8 +15,10 @@ let transposeModal = null;
 let importModal = null;
 let bulkImportModal = null;
 let allSongsForModal = [];
-let currentFontSize = 16;
+let currentFontSize = 14;
+let isSelectionMode = false;
 let scrollInterval = null;
+let returnToView = 'view-songs';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Verificar Auth
@@ -57,6 +59,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         showView('view-repertoires');
         await loadRepertoires();
     });
+    
+    document.getElementById('nav-profile').addEventListener('click', async (e) => {
+        e.preventDefault();
+        closeNavbar();
+        showView('view-profile');
+        await loadProfileView();
+    });
 
     document.getElementById('nav-home').addEventListener('click', (e) => {
         e.preventDefault();
@@ -64,8 +73,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         showView('view-home');
     });
 
-    document.getElementById('back-to-songs').addEventListener('click', () => {
-        showView('view-songs');
+    document.getElementById('back-to-songs').addEventListener('click', (e) => {
+        showView(returnToView);
     });
     document.getElementById('back-to-repertoires').addEventListener('click', () => {
         showView('view-repertoires');
@@ -128,14 +137,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('btn-add-repertoire').addEventListener('click', () => openRepertoireModal());
     document.getElementById('btn-save-repertoire').addEventListener('click', saveRepertoire);
     document.getElementById('btn-delete-rep').addEventListener('click', deleteRepertoire);
+    document.getElementById('btn-edit-repertoire').addEventListener('click', () => toggleRepertoireEditMode(true));
+    document.getElementById('btn-save-repertoire-details').addEventListener('click', saveRepertoireDetails);
     document.getElementById('btn-add-song-to-rep').addEventListener('click', openAddSongModal);
     document.getElementById('btn-confirm-add-song').addEventListener('click', addSongToRepertoire);
     document.getElementById('input-song-section').addEventListener('change', updateSongSelectOptions);
     document.getElementById('input-song-search').addEventListener('input', updateSongSelectOptions);
     document.getElementById('select-song-to-add').addEventListener('change', updateRepertoireKeyInput);
     document.getElementById('btn-bulk-import').addEventListener('click', handleBulkImport);
-    document.getElementById('btn-delete-all-hymns').addEventListener('click', deleteAllHymns);
+    document.getElementById('btn-select-songs').addEventListener('click', () => toggleSelectionMode(true));
+    document.getElementById('btn-cancel-selection').addEventListener('click', () => toggleSelectionMode(false));
+    document.getElementById('btn-delete-selected').addEventListener('click', deleteSelectedSongs);
     document.getElementById('song-type').addEventListener('change', toggleYoutubeInput);
+    document.getElementById('song-list-search').addEventListener('input', filterSongsList);
+    
+    document.getElementById('profile-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await saveProfile();
+    });
+
+    document.getElementById('password-change-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await changePassword();
+    });
 
     // Theme Selector
     document.getElementById('rep-theme-select').addEventListener('change', (e) => {
@@ -172,7 +196,88 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
         reader.readAsText(file);
     });
+
+    // Registrar Service Worker para PWA
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+                .then(registration => {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                })
+                .catch(err => {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+        });
+    }
+
+    // Mantener la base de datos activa en el plan gratuito de Supabase
+    setInterval(keepDatabaseAwake, 300000); // Ping cada 5 minutos
 });
+
+/**
+ * Realiza una consulta ligera a la base de datos para evitar que Supabase
+ * pause el proyecto en el plan gratuito por inactividad.
+ */
+function keepDatabaseAwake() {
+    supabase.from('profiles').select('id', { count: 'exact', head: true }).then(({ error }) => {
+        if (error) {
+            console.warn('Ping a la base de datos falló:', error.message);
+        } else {
+            // No es necesario mostrar esto en producción, pero es útil para depurar.
+            // console.log('Ping a la base de datos exitoso para mantenerla activa.');
+        }
+    });
+}
+
+async function loadProfileView() {
+    const { data: { user } } = await supabase.auth.getUser();
+    document.getElementById('profile-email').value = user ? user.email : '';
+    document.getElementById('profile-name').value = userProfile.nombre || '';    
+    const roleSelect = document.getElementById('profile-role');
+    roleSelect.value = userProfile.rol || 'user';
+
+    // Solo los administradores pueden cambiar el rol
+    if (userProfile.rol === 'admin') {
+        roleSelect.disabled = false;
+    } else {
+        roleSelect.disabled = true;
+    }
+}
+
+async function saveProfile() {
+    const newName = document.getElementById('profile-name').value;
+    const newRole = document.getElementById('profile-role').value;
+    if (!newName) return showToast('El nombre es requerido', 'warning');
+
+    const { error } = await supabase
+        .from('profiles')
+        .update({ nombre: newName, rol: newRole })
+        .eq('id', userProfile.id);
+
+    if (error) {
+        showToast('Error al actualizar perfil: ' + error.message, 'danger');
+    } else {
+        showToast('Perfil actualizado correctamente', 'success');
+        userProfile.nombre = newName;
+        userProfile.rol = newRole;
+        document.getElementById('user-name').textContent = newName;
+    }
+}
+
+async function changePassword() {
+    const newPassword = document.getElementById('profile-new-password').value;
+    if (newPassword.length < 6) {
+        return showToast('La contraseña debe tener al menos 6 caracteres.', 'warning');
+    }
+
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+        showToast('Error al cambiar la contraseña: ' + error.message, 'danger');
+    } else {
+        showToast('Contraseña actualizada correctamente.', 'success');
+        document.getElementById('password-change-form').reset();
+    }
+}
 
 async function exportElementAsPNG(element, filename, options = {}) {
     const elementsToHide = element.querySelectorAll('.no-export');
@@ -191,33 +296,93 @@ async function exportElementAsPNG(element, filename, options = {}) {
         link.click();
     } catch (err) {
         console.error('Error exportando a PNG:', err);
-        alert('Hubo un error al exportar la imagen.');
+        showToast('Hubo un error al exportar la imagen.', 'danger');
     } finally {
         elementsToHide.forEach(el => el.style.display = '');
     }
 }
 
 function showView(viewId) {
-    ['view-home', 'view-songs', 'view-song-detail', 'view-repertoires', 'view-repertoire-detail'].forEach(id => {
+    ['view-home', 'view-songs', 'view-song-detail', 'view-repertoires', 'view-repertoire-detail', 'view-profile'].forEach(id => {
         document.getElementById(id).classList.add('d-none');
     });
     document.getElementById(viewId).classList.remove('d-none');
 }
 
 function closeNavbar() {
-    const navbarCollapse = document.getElementById('navbarNav');
-    if (navbarCollapse.classList.contains('show')) {
-        const bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse) || new bootstrap.Collapse(navbarCollapse, { toggle: false });
-        bsCollapse.hide();
+    const navbarOffcanvas = document.getElementById('offcanvasNavbar');
+    if (navbarOffcanvas.classList.contains('show')) {
+        const bsOffcanvas = bootstrap.Offcanvas.getInstance(navbarOffcanvas) || new bootstrap.Offcanvas(navbarOffcanvas);
+        bsOffcanvas.hide();
+    }
+}
+
+function showToast(message, type = 'info') {
+    const toastEl = document.getElementById('liveToast');
+    const toastBody = document.getElementById('toast-body');
+    
+    // Configurar colores según tipo
+    toastEl.className = `toast align-items-center text-white border-0 bg-${type}`;
+    toastBody.textContent = message;
+    
+    const toast = new bootstrap.Toast(toastEl);
+    toast.show();
+}
+
+function toggleSelectionMode(enable) {
+    isSelectionMode = enable;
+    const view = document.getElementById('view-songs');
+    const mainActions = document.getElementById('songs-main-actions');
+    const selectionActions = document.getElementById('songs-selection-actions');
+
+    view.classList.toggle('selection-mode', enable);
+    mainActions.classList.toggle('d-none', enable);
+    selectionActions.classList.toggle('d-none', !enable);
+
+    // Uncheck all boxes when exiting selection mode
+    if (!enable) {
+        const checkedBoxes = view.querySelectorAll('.song-selection-checkbox input:checked');
+        checkedBoxes.forEach(cb => cb.checked = false);
+    }
+}
+
+async function deleteSelectedSongs() {
+    const view = document.getElementById('view-songs');
+    const checkedBoxes = view.querySelectorAll('.song-selection-checkbox input:checked');
+    const idsToDelete = Array.from(checkedBoxes).map(cb => cb.value);
+
+    if (idsToDelete.length === 0) {
+        showToast('No has seleccionado ninguna canción.', 'warning');
+        return;
+    }
+
+    if (!confirm(`¿Estás seguro de que quieres eliminar ${idsToDelete.length} canción(es)? Esta acción no se puede deshacer.`)) {
+        return;
+    }
+
+    const { error } = await supabase
+        .from('songs')
+        .delete()
+        .in('id', idsToDelete);
+
+    if (error) {
+        showToast(`Error al eliminar: ${error.message}`, 'danger');
+    } else {
+        showToast(`${idsToDelete.length} canción(es) eliminada(s) correctamente.`, 'success');
+        toggleSelectionMode(false); // Exit selection mode
+        await loadSongs(); // Refresh the list
     }
 }
 
 async function loadSongs() {
     const hymnsList = document.getElementById('hymns-list');
-    const worshipList = document.getElementById('worship-list');
+    const jubiloList = document.getElementById('jubilo-list');
+    const adoracionList = document.getElementById('adoracion-list');
+    document.getElementById('song-list-search').value = ''; // Resetear búsqueda al cargar
     
-    hymnsList.innerHTML = '<div class="spinner-border" role="status"></div>';
-    worshipList.innerHTML = '<div class="spinner-border" role="status"></div>';
+    hymnsList.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm text-secondary" role="status"></div></div>';
+    jubiloList.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm text-secondary" role="status"></div></div>';
+    adoracionList.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm text-secondary" role="status"></div></div>';
 
     const { data: songs, error } = await supabase
         .from('songs')
@@ -227,35 +392,56 @@ async function loadSongs() {
     if (error) {
         console.error(error);
         hymnsList.innerHTML = 'Error cargando canciones.';
-        worshipList.innerHTML = '';
+        jubiloList.innerHTML = '';
+        adoracionList.innerHTML = '';
         return;
     }
 
     hymnsList.innerHTML = '';
-    worshipList.innerHTML = '';
+    jubiloList.innerHTML = '';
+    adoracionList.innerHTML = '';
 
     songs.forEach(song => {
         const item = document.createElement('a');
-        item.className = 'list-group-item list-group-item-action';
+        item.className = 'list-group-item list-group-item-action d-flex align-items-center';
         item.href = '#';
         
-        // Formato diferente para himnos (énfasis en número si es numérico)
+        const checkboxHTML = `
+            <div class="form-check song-selection-checkbox me-3 d-none">
+                <input class="form-check-input" type="checkbox" value="${song.id}">
+            </div>
+        `;
+
+        let titleHTML;
         if (song.tipo === 'himno') {
             const displayTitle = song.autor ? ` - ${song.autor}` : '';
-            item.innerHTML = `<span class="fw-bold">#${song.titulo}${displayTitle}</span> <span class="badge bg-secondary float-end">${song.tono_original || '-'}</span>`;
+            titleHTML = `<span class="fw-bold">#${song.titulo}${displayTitle}</span> <span class="badge bg-secondary float-end">${song.tono_original || '-'}</span>`;
         } else {
-            item.innerHTML = `${song.titulo} <span class="badge bg-secondary float-end">${song.tono_original || '-'}</span>`;
+            titleHTML = `${song.titulo} <span class="badge bg-secondary float-end">${song.tono_original || '-'}</span>`;
         }
+
+        item.innerHTML = checkboxHTML + `<div class="flex-grow-1">${titleHTML}</div>`;
 
         item.addEventListener('click', (e) => {
             e.preventDefault();
-            openSong(song);
+            if (isSelectionMode) {
+                const chk = e.currentTarget.querySelector('input[type="checkbox"]');
+                if (chk && e.target.type !== 'checkbox') {
+                    chk.checked = !chk.checked;
+                }
+            } else {
+                openSong(song);
+            }
         });
 
         if (song.tipo === 'himno') {
             hymnsList.appendChild(item);
+        } else if (song.tipo === 'jubilo' || song.tipo === 'ofrenda') {
+            jubiloList.appendChild(item);
+        } else if (song.tipo === 'adoracion') {
+            adoracionList.appendChild(item);
         } else {
-            worshipList.appendChild(item);
+            jubiloList.appendChild(item);
         }
     });
     
@@ -275,11 +461,22 @@ function sortListNumerically(listContainer) {
     items.forEach(item => listContainer.appendChild(item));
 }
 
-function openSong(song) {
+function filterSongsList(e) {
+    const term = e.target.value.toLowerCase();
+    const items = document.querySelectorAll('#hymns-list a, #jubilo-list a, #adoracion-list a');
+    items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        if (text.includes(term)) {
+            item.classList.remove('d-none');
+        } else {
+            item.classList.add('d-none');
+        }
+    });
+}
+
+function openSong(song, targetKey = null, fromView = 'view-songs') {
     currentSong = song;
-    currentSemitones = 0;
-    const { suffix } = getSongRootAndSuffix(song.tono_original);
-    currentTransposedSuffix = suffix;
+    returnToView = fromView;
     
     // Reset View State
     currentFontSize = 16;
@@ -304,6 +501,31 @@ function openSong(song) {
     } else {
         ytContainer.classList.add('d-none');
         ytContainer.innerHTML = '';
+    }
+
+    // Lógica de Tonalidad (Si viene con un tono específico)
+    if (targetKey && targetKey !== song.tono_original) {
+        const { root: originalRoot } = getSongRootAndSuffix(song.tono_original || 'C');
+        const { root: targetRoot, suffix: targetSuffix } = getSongRootAndSuffix(targetKey);
+        
+        const normalizeMap = { 'Cb': 'B', 'Db': 'C#', 'Eb': 'D#', 'Fb': 'E', 'Gb': 'F#', 'Ab': 'G#', 'Bb': 'A#', 'E#': 'F', 'B#': 'C' };
+        
+        const normOriginal = normalizeMap[originalRoot] || originalRoot;
+        const normTarget = normalizeMap[targetRoot] || targetRoot;
+
+        const startIdx = scales.sharp.indexOf(normOriginal);
+        const endIdx = scales.sharp.indexOf(normTarget);
+        
+        if (startIdx !== -1 && endIdx !== -1) {
+            currentSemitones = endIdx - startIdx;
+        } else {
+            currentSemitones = 0;
+        }
+        currentTransposedSuffix = targetSuffix;
+    } else {
+        currentSemitones = 0;
+        const { suffix } = getSongRootAndSuffix(song.tono_original);
+        currentTransposedSuffix = suffix;
     }
 
     renderCurrentSong();
@@ -342,7 +564,7 @@ function getCurrentKeyLabel() {
 
 function updateTransposeButton() {
     const btn = document.getElementById('btn-transpose-menu');
-    btn.textContent = `Tono: ${getCurrentKeyLabel()}`;
+    btn.textContent = getCurrentKeyLabel();
 }
 
 function openTransposeModal() {
@@ -508,8 +730,9 @@ async function saveSong() {
     }
 
     if (error) {
-        alert('Error guardando: ' + error.message);
+        showToast('Error guardando: ' + error.message, 'danger');
     } else {
+        showToast('Canción guardada correctamente', 'success');
         songModal.hide();
         await loadSongs(); // Recarga la lista de canciones
         if (id) { // Si estábamos editando una canción
@@ -531,29 +754,13 @@ async function saveSong() {
     }
 }
 
-async function deleteAllHymns() {
-    if (!confirm('⚠️ ¿ESTÁS SEGURO? \n\nEsto eliminará TODOS los himnos de la base de datos. \nÚsalo solo si quieres limpiar una importación incorrecta.\n\nEsta acción no se puede deshacer.')) return;
-    
-    const { error } = await supabase
-        .from('songs')
-        .delete()
-        .eq('tipo', 'himno');
-
-    if (error) {
-        alert('Error eliminando himnos: ' + error.message);
-    } else {
-        alert('Todos los himnos han sido eliminados correctamente.');
-        await loadSongs();
-    }
-}
-
 async function deleteSong() {
     if (!confirm('¿Estás seguro de eliminar esta canción?')) return;
 
     const { error } = await supabase.from('songs').delete().eq('id', currentSong.id);
     
     if (error) {
-        alert('Error eliminando: ' + error.message);
+        showToast('Error eliminando: ' + error.message, 'danger');
     } else {
         showView('view-songs');
         await loadSongs();
@@ -564,7 +771,7 @@ async function deleteSong() {
 
 async function loadRepertoires() {
     const listContainer = document.getElementById('repertoires-list');
-    listContainer.innerHTML = '<div class="spinner-border" role="status"></div>';
+    listContainer.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm text-secondary" role="status"></div></div>';
 
     const { data: repertoires, error } = await supabase
         .from('repertoires')
@@ -596,16 +803,30 @@ async function loadRepertoires() {
 
 async function openRepertoire(rep) {
     currentRepertoire = rep;
+    toggleRepertoireEditMode(false); // Reset edit mode
+
     document.getElementById('rep-detail-title').textContent = rep.titulo;
-    document.getElementById('rep-detail-date').textContent = rep.fecha;
-    document.getElementById('rep-detail-time').textContent = rep.hora;
+
+    if (rep.fecha) {
+        const dateParts = rep.fecha.split('-'); // YYYY-MM-DD
+        document.getElementById('rep-detail-date').textContent = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+    } else {
+        document.getElementById('rep-detail-date').textContent = '';
+    }
+    
+    if (rep.hora) {
+        const timeParts = rep.hora.split(':'); // HH:MM:SS
+        document.getElementById('rep-detail-time').textContent = `${timeParts[0]}:${timeParts[1]}`;
+    } else {
+        document.getElementById('rep-detail-time').textContent = '';
+    }
     
     const uniformEl = document.getElementById('rep-uniform-display');
     if (rep.uniforme) {
         uniformEl.textContent = `Uniforme: ${rep.uniforme}`;
-        uniformEl.style.display = 'inline-block';
+        uniformEl.classList.remove('d-none');
     } else {
-        uniformEl.style.display = 'none';
+        uniformEl.classList.add('d-none');
     }
     
     document.getElementById('rep-director').textContent = rep.director || '-';
@@ -615,13 +836,25 @@ async function openRepertoire(rep) {
     document.getElementById('rep-drums').textContent = rep.bateria || '-';
     document.getElementById('rep-bass').textContent = rep.bajo || '-';
 
+    // Populate edit fields for later
+    document.getElementById('edit-rep-title').value = rep.titulo || '';
+    document.getElementById('edit-rep-date').value = rep.fecha || '';
+    document.getElementById('edit-rep-time').value = rep.hora ? rep.hora.substring(0, 5) : ''; // HH:MM
+    document.getElementById('edit-rep-uniform').value = rep.uniforme || '';
+    document.getElementById('edit-rep-director').value = rep.director || '';
+    document.getElementById('edit-rep-singers').value = rep.coristas || '';
+    document.getElementById('edit-rep-piano').value = rep.teclado || '';
+    document.getElementById('edit-rep-guitar').value = rep.guitarra || '';
+    document.getElementById('edit-rep-drums').value = rep.bateria || '';
+    document.getElementById('edit-rep-bass').value = rep.bajo || '';
+
     await loadRepertoireSongs(rep.id);
     showView('view-repertoire-detail');
 }
 
 async function loadRepertoireSongs(repId) {
     const list = document.getElementById('rep-songs-list');
-    list.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
+    list.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm text-secondary" role="status"></div></div>';
 
     const { data, error } = await supabase
         .from('repertoire_songs')
@@ -682,17 +915,30 @@ async function loadRepertoireSongs(repId) {
             songText.style.flex = '1';
 
             let displayTitle = item.songs.titulo;
-            if (item.songs.tipo === 'himno' && item.songs.autor) {
-                displayTitle = `#${item.songs.titulo} - ${item.songs.autor}`;
+            if (item.songs.tipo === 'himno') {
+                displayTitle = `#${item.songs.titulo}`;
+                if (item.songs.autor) {
+                    displayTitle += ` - ${item.songs.autor}`;
+                }
             }
+
+            const authorHtml = (item.songs.autor && item.songs.tipo !== 'himno') ? `<small class="text-muted fw-normal ms-2" style="font-size: 0.5em; vertical-align: middle; letter-spacing: 0;">${item.songs.autor}</small>` : '';
 
             // Mostrar el tono guardado para el repertorio, o el original si no hay específico
             const toneToDisplay = item.tono || item.songs.tono_original || '-';
-            songText.innerHTML = `<span class="rep-song-index">•</span><span class="rep-song-title">${displayTitle}</span> <span class="badge bg-white text-dark border border-dark ms-2 rep-key-badge" style="vertical-align: middle; border-color: currentColor !important;">${toneToDisplay}</span>`;
+            songText.innerHTML = `<span class="rep-song-index">•</span><span class="rep-song-title">${displayTitle}${authorHtml}</span> <span class="badge bg-white text-dark border border-dark ms-2 rep-key-badge" style="vertical-align: middle; border-color: currentColor !important;">${toneToDisplay}</span>`;
             
             li.appendChild(songText);
             
             if (userProfile.rol === 'admin') {
+                const keyBadge = li.querySelector('.rep-key-badge');
+                keyBadge.style.cursor = 'pointer';
+                keyBadge.title = 'Click para cambiar tono';
+                keyBadge.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    editRepertoireSongKey(item);
+                });
+
                 const btn = document.createElement('button');
                 btn.className = 'btn btn-sm btn-outline-danger no-export';
                 btn.style.marginLeft = '0.5rem';
@@ -706,12 +952,77 @@ async function loadRepertoireSongs(repId) {
             
             // Click para ver la canción
             li.style.cursor = 'pointer';
-            li.onclick = () => openSong(item.songs);
+            li.onclick = () => openSong(item.songs, item.tono || item.songs.tono_original, 'view-repertoire-detail');
 
             list.appendChild(li);
             songIndex++;
         });
     });
+}
+
+function toggleRepertoireEditMode(isEditing) {
+    const view = document.getElementById('view-repertoire-detail');
+    const displayElements = view.querySelectorAll('#rep-detail-title, #rep-detail-date, #rep-detail-time, #rep-director, #rep-singers, #rep-piano, #rep-guitar, #rep-drums, #rep-bass');
+    const editElements = view.querySelectorAll('#edit-rep-title, #edit-rep-date, #edit-rep-time, #edit-rep-uniform, #edit-rep-director, #edit-rep-singers, #edit-rep-piano, #edit-rep-guitar, #edit-rep-drums, #edit-rep-bass');
+
+    document.getElementById('btn-edit-repertoire').classList.toggle('d-none', isEditing);
+    document.getElementById('btn-save-repertoire-details').classList.toggle('d-none', !isEditing);
+
+    displayElements.forEach(el => el.classList.toggle('d-none', isEditing));
+    editElements.forEach(el => el.classList.toggle('d-none', !isEditing));
+
+    // Special case for uniform display
+    const uniformDisplay = document.getElementById('rep-uniform-display');
+    if (isEditing) {
+        uniformDisplay.classList.add('d-none');
+    } else if (currentRepertoire && currentRepertoire.uniforme) {
+        uniformDisplay.classList.remove('d-none');
+    } else {
+        uniformDisplay.classList.add('d-none');
+    }
+}
+
+async function saveRepertoireDetails() {
+    const updatedData = {
+        titulo: document.getElementById('edit-rep-title').value,
+        fecha: document.getElementById('edit-rep-date').value,
+        hora: document.getElementById('edit-rep-time').value,
+        uniforme: document.getElementById('edit-rep-uniform').value,
+        director: document.getElementById('edit-rep-director').value,
+        coristas: document.getElementById('edit-rep-singers').value,
+        teclado: document.getElementById('edit-rep-piano').value,
+        guitarra: document.getElementById('edit-rep-guitar').value,
+        bateria: document.getElementById('edit-rep-drums').value,
+        bajo: document.getElementById('edit-rep-bass').value,
+    };
+
+    const { data, error } = await supabase
+        .from('repertoires')
+        .update(updatedData)
+        .eq('id', currentRepertoire.id)
+        .select()
+        .single();
+
+    if (error) {
+        showToast('Error al guardar los cambios: ' + error.message, 'danger');
+    } else {
+        await openRepertoire(data); // Re-renders the view with fresh data and exits edit mode
+    }
+}
+
+async function editRepertoireSongKey(repertoireSongItem) {
+    const currentKey = repertoireSongItem.tono || repertoireSongItem.songs.tono_original || '';
+    const newKey = prompt('Ingresa la nueva tonalidad para esta canción en este repertorio:', currentKey);
+
+    if (newKey !== null && newKey.trim() !== currentKey) {
+        const { error } = await supabase
+            .from('repertoire_songs')
+            .update({ tono: newKey.trim() })
+            .eq('id', repertoireSongItem.id);
+
+        if (error) showToast('Error al actualizar la tonalidad: ' + error.message, 'danger');
+        else await loadRepertoireSongs(currentRepertoire.id);
+    }
 }
 
 function openRepertoireModal() {
@@ -725,7 +1036,7 @@ async function saveRepertoire() {
     const hora = document.getElementById('rep-time').value;
     
     if (!titulo || !fecha || !hora) {
-        alert('Por favor completa título, fecha y hora');
+        showToast('Por favor completa título, fecha y hora', 'warning');
         return;
     }
 
@@ -745,8 +1056,9 @@ async function saveRepertoire() {
 
     const { error } = await supabase.from('repertoires').insert([data]);
     if (error) {
-        alert('Error guardando: ' + error.message);
+        showToast('Error guardando: ' + error.message, 'danger');
     } else {
+        showToast('Repertorio creado exitosamente', 'success');
         repertoireModal.hide();
         await loadRepertoires();
     }
@@ -840,7 +1152,7 @@ function updateRepertoireKeyInput() {
 async function addSongToRepertoire() {
     const songId = document.getElementById('select-song-to-add').value;
     if (!songId) {
-        alert('Por favor selecciona una canción');
+        showToast('Por favor selecciona una canción', 'warning');
         return;
     }
 
@@ -856,8 +1168,9 @@ async function addSongToRepertoire() {
     }]);
     
     if (error) {
-        alert('Error al agregar la canción: ' + error.message);
+        showToast('Error al agregar la canción: ' + error.message, 'danger');
     } else {
+        showToast('Canción agregada', 'success');
         addSongModal.hide();
         loadRepertoireSongs(currentRepertoire.id);
     }
@@ -913,6 +1226,9 @@ function processImport() {
 }
 
 function convertChordsOverLyrics(text) {
+    // Normalizar tabs a espacios para mantener alineación relativa
+    text = text.replace(/\t/g, '    ');
+
     const lines = text.split('\n');
     const output = [];
     // Regex to detect section headers like (Coro), Verso 1, Puente:, etc.
@@ -960,7 +1276,8 @@ function isChordLine(line) {
     if (tokens.length === 0) return false;
 
     // Regex flexible para acordes
-    const chordRegex = /^([A-G][#b]?)(m|min|maj|dim|aug|sus|add|7|9|11|13|6|\/|[0-9]|\(|\))*$/;
+    // Mejorado para incluir b, #, +, °, ø en sufijos (ej: C7#9, Bm7b5)
+    const chordRegex = /^([A-G][#b]?)(m|min|maj|dim|aug|sus|add|7|9|11|13|6|\/|[0-9]|\(|\)|#|b|\+|°|ø|-)*$/;
     
     // If any token is a long word that is not a chord, it's a lyric line.
     if (tokens.some(token => token.length > 6 && !chordRegex.test(token))) {
@@ -1089,7 +1406,7 @@ async function handleBulkImport() {
         } catch (err) {
             if (err.name !== 'AbortError') {
                 console.error('Error seleccionando carpeta:', err);
-                alert('Error al seleccionar carpeta: ' + err.message);
+                showToast('Error al seleccionar carpeta: ' + err.message, 'danger');
             }
         }
     } 
