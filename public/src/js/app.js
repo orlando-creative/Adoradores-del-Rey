@@ -10,12 +10,14 @@ lyricsStyles.textContent = `
         text-align: center !important;
         margin-bottom: 0.2rem !important;
         display: block !important;
+        white-space: normal !important;
+        overflow-wrap: break-word !important;
     }
     .lyrics-only .section-header {
         text-align: center !important;
-        font-family: 'Georgia', 'Times New Roman', serif !important;
-        font-size: 1.8em !important;
-        font-weight: bold;
+        font-family: 'Roboto', 'Segoe UI', sans-serif !important;
+        font-size: 1.4em !important;
+        font-weight: normal !important;
         margin-top: 1rem !important;
         margin-bottom: 0.5rem !important;
     }
@@ -23,10 +25,14 @@ lyricsStyles.textContent = `
         display: none !important;
     }
     .lyrics-only .lyrics {
-        font-family: 'Georgia', 'Times New Roman', serif !important;
-        font-size: 2rem !important;
-        color: #212529;
-        line-height: 1.2;
+        font-family: 'Roboto', 'Segoe UI', sans-serif !important;
+        font-size: 1.3rem !important;
+        color: #000000 !important;
+        line-height: 1.4;
+        font-weight: 400 !important;
+    }
+    .lyrics-only .chorus-line .lyrics {
+        font-weight: 700 !important;
     }
     .lyrics-only .chord-word {
         display: inline !important;
@@ -34,6 +40,9 @@ lyricsStyles.textContent = `
     }
     .lyrics-only .chord-word .lyrics {
         display: inline;
+    }
+    .lyrics {
+        font-family: 'Roboto', 'Segoe UI', sans-serif;
     }
 `;
 document.head.appendChild(lyricsStyles);
@@ -50,7 +59,7 @@ let transposeModal = null;
 let importModal = null;
 let bulkImportModal = null;
 let allSongsForModal = [];
-let currentFontSize = 13; // Tamaño óptimo inicial reducido
+let currentFontSize = 15; // Tamaño óptimo inicial
 let isSelectionMode = false;
 let scrollInterval = null;
 let scrollSpeedMs = 50; // Velocidad inicial (ms por pixel)
@@ -580,7 +589,7 @@ function openSong(song, targetKey = null, fromView = 'view-songs') {
     returnToView = fromView;
     
     // Reset View State
-    currentFontSize = 14; // Tamaño más pequeño para mejor visualización en móvil
+    currentFontSize = 15; // Tamaño ideal para legibilidad
     updateFontSize();
     stopAutoScroll();
     

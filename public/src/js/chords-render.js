@@ -8,16 +8,29 @@ export function renderSong(lyricsWithChords, semitones = 0) {
     
     // Regex para detectar títulos de sección (Coro, Estribillo, Puente, etc.)
     const sectionHeaderRegex = /^\s*(\(?(verso|verse|coro|chorus|estribillo|puente|bridge|intro|outro|solo|estrofa|pre-coro|pre-chorus)\b.*)/i;
+    let inChorus = false;
 
     lines.forEach(line => {
         // 1. Si es un título de sección, renderizar con estilo especial
         if (sectionHeaderRegex.test(line)) {
-            html += `<div class="section-header">${line.replace(/[\(\)]/g, '')}</div>`;
+            const lowerLine = line.toLowerCase();
+            // Determinar si la sección actual es un coro y resetear si no lo es
+            const isThisSectionAChorus = lowerLine.includes('coro') || lowerLine.includes('chorus') || lowerLine.includes('estribillo');
+            inChorus = isThisSectionAChorus;
+
+            let headerContent = line;
+            // Poner en negrita solo la palabra clave si es un coro
+            if (isThisSectionAChorus) {
+                headerContent = line.replace(/(coro|chorus|estribillo)/i, '<strong>$1</strong>');
+            }
+            
+            html += `<div class="section-header">${headerContent}</div>`;
             return;
         }
 
-        // 2. Si es línea vacía
+        // 2. Si es línea vacía, se termina la sección de coro
         if (!line.trim()) {
+            inChorus = false;
             html += '<div class="line-wrapper" style="min-height: 1em;">&nbsp;</div>';
             return;
         }
@@ -29,7 +42,7 @@ export function renderSong(lyricsWithChords, semitones = 0) {
         const isInstrumental = !hasLyricsText;
         // Reducir espacio si es instrumental para que no ocupe tanto
         const wrapperStyle = isInstrumental ? 'margin-bottom: 2px; line-height: 1.1;' : 'margin-bottom: 6px; line-height: 1.2;';
-        let lineHtml = `<div class="line-wrapper" style="${wrapperStyle}">`;
+        let lineHtml = `<div class="line-wrapper ${inChorus ? 'chorus-line' : ''}" style="${wrapperStyle}">`;
         
         for (let i = 0; i < parts.length; i++) {
             const part = parts[i];
@@ -62,17 +75,17 @@ export function renderSong(lyricsWithChords, semitones = 0) {
                                 // Asignar el acorde a la primera palabra encontrada
                                 const currentChord = !chordAssigned ? transposed : '&nbsp;';
                                 // Estilo CifraClub: Acorde naranja, negrita, apilado sobre la letra
-                                lineHtml += `<span class="chord-word" style="display: inline-flex; flex-direction: column; vertical-align: bottom; margin-right: 1px;"><span class="chord" style="font-weight: bold; color: #eb5e00; font-size: 0.95em; margin-bottom: -1px;">${currentChord}</span><span class="lyrics">${token}</span></span>`;
+                                lineHtml += `<span class="chord-word" style="display: inline-flex; flex-direction: column; vertical-align: bottom; margin-right: 1px;"><span class="chord" style="font-weight: 700; color: #eb5e00; font-size: 0.95em; margin-bottom: -1px;">${currentChord}</span><span class="lyrics" style="font-weight: 400; color: #000;">${token}</span></span>`;
                                 chordAssigned = true;
                             }
                         });
                     } else {
                         // Solo espacios o texto vacío (ej: [C]  [D])
-                        lineHtml += `<span class="chord-word" style="display: inline-flex; flex-direction: column; vertical-align: bottom; margin-right: 2px;"><span class="chord" style="font-weight: bold; color: #eb5e00; font-size: 0.95em; margin-bottom: -1px;">${transposed}</span><span class="lyrics">${emptyLyricContent}</span></span>` + text;
+                        lineHtml += `<span class="chord-word" style="display: inline-flex; flex-direction: column; vertical-align: bottom; margin-right: 2px;"><span class="chord" style="font-weight: 700; color: #eb5e00; font-size: 0.95em; margin-bottom: -1px;">${transposed}</span><span class="lyrics" style="font-weight: 400; color: #000;">${emptyLyricContent}</span></span>` + text;
                     }
                 } else {
                     // Sin texto (ej: [C][D])
-                    lineHtml += `<span class="chord-word" style="display: inline-flex; flex-direction: column; vertical-align: bottom; margin-right: 2px;"><span class="chord" style="font-weight: bold; color: #eb5e00; font-size: 0.95em; margin-bottom: -1px;">${transposed}</span><span class="lyrics">${emptyLyricContent}</span></span>`;
+                    lineHtml += `<span class="chord-word" style="display: inline-flex; flex-direction: column; vertical-align: bottom; margin-right: 2px;"><span class="chord" style="font-weight: 700; color: #eb5e00; font-size: 0.95em; margin-bottom: -1px;">${transposed}</span><span class="lyrics" style="font-weight: 400; color: #000;">${emptyLyricContent}</span></span>`;
                 }
             } else {
                 if (part) {
@@ -83,7 +96,7 @@ export function renderSong(lyricsWithChords, semitones = 0) {
                             lineHtml += token;
                         } else if (token) {
                             // Texto sin acorde: renderizar simple para ahorrar espacio vertical (cabalito)
-                            lineHtml += `<span class="lyrics">${token}</span>`;
+                            lineHtml += `<span class="lyrics" style="font-weight: 400; color: #000;">${token}</span>`;
                         }
                     });
                 }
