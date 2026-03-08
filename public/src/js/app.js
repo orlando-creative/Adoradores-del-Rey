@@ -3,6 +3,41 @@ import { getCurrentProfile, logout } from './auth.js';
 import { renderSong } from './chords-render.js';
 import { scales } from './transpose.js';
 
+// Inyectar estilos para modo "Solo Letra" y Himnos
+const lyricsStyles = document.createElement('style');
+lyricsStyles.textContent = `
+    .lyrics-only .line-wrapper {
+        text-align: center !important;
+        margin-bottom: 0.2rem !important;
+        display: block !important;
+    }
+    .lyrics-only .section-header {
+        text-align: center !important;
+        font-family: 'Georgia', 'Times New Roman', serif !important;
+        font-size: 1.8em !important;
+        font-weight: bold;
+        margin-top: 1rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    .lyrics-only .chord {
+        display: none !important;
+    }
+    .lyrics-only .lyrics {
+        font-family: 'Georgia', 'Times New Roman', serif !important;
+        font-size: 2rem !important;
+        color: #212529;
+        line-height: 1.2;
+    }
+    .lyrics-only .chord-word {
+        display: inline !important;
+        margin: 0 2px !important;
+    }
+    .lyrics-only .chord-word .lyrics {
+        display: inline;
+    }
+`;
+document.head.appendChild(lyricsStyles);
+
 let currentSong = null;
 let currentSemitones = 0;
 let currentTransposedSuffix = null;
@@ -15,9 +50,10 @@ let transposeModal = null;
 let importModal = null;
 let bulkImportModal = null;
 let allSongsForModal = [];
-let currentFontSize = 14;
+let currentFontSize = 13; // Tamaño óptimo inicial reducido
 let isSelectionMode = false;
 let scrollInterval = null;
+let scrollSpeedMs = 50; // Velocidad inicial (ms por pixel)
 let returnToView = 'view-songs';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -84,8 +120,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('btn-transpose-menu').addEventListener('click', openTransposeModal);
     document.getElementById('btn-font-plus').addEventListener('click', () => changeFontSize(2));
     document.getElementById('btn-font-minus').addEventListener('click', () => changeFontSize(-2));
-    document.getElementById('btn-columns').addEventListener('click', toggleColumns);
+    document.getElementById('btn-toggle-lyrics').addEventListener('click', toggleLyricsOnly);
     document.getElementById('btn-auto-scroll').addEventListener('click', toggleAutoScroll);
+    
+    document.getElementById('scroll-speed-range').addEventListener('input', (e) => {
+        const val = parseInt(e.target.value);
+        // Mapeo: 0 (Lento/200ms) -> 100 (Rápido/5ms)
+        scrollSpeedMs = Math.floor(200 - (val * 1.95));
+        if (scrollSpeedMs < 5) scrollSpeedMs = 5;
+        
+        if (scrollInterval) startScrollInterval();
+    });
 
     // 4. Exportar PNG (Lógica mejorada)
     document.getElementById('export-png').addEventListener('click', () => {
@@ -187,12 +232,68 @@ document.addEventListener('DOMContentLoaded', async () => {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Usar el nombre del archivo (sin extensión) como título
-        document.getElementById('song-title').value = file.name.replace(/\.[^/.]+$/, "");
+        // 1. Detectar Título y Autor desde el nombre del archivo
+        let title = file.name.replace(/\.[^/.]+$/, "");
+        let author = '';
+
+        // Si tiene guión, asumimos formato "Autor - Título"
+        if (title.includes(' - ')) {
+            const parts = title.split(' - ');
+            author = parts[0].trim();
+            title = parts.slice(1).join(' - ').trim();
+        }
+
+        document.getElementById('song-title').value = title;
+        document.getElementById('song-author').value = author;
 
         const reader = new FileReader();
         reader.onload = (event) => {
-            document.getElementById('import-textarea').value = event.target.result;
+            const content = event.target.result;
+            document.getElementById('import-textarea').value = content;
+
+            // 2. Analizar contenido para metadatos explícitos y Tono
+            const lines = content.split('\n');
+            let detectedKey = '';
+            
+            const keyRegex = /^(?:Tono|Key|Tonality|Tonalidad):\s*([A-G][#b]?m?)/i;
+            const authorRegex = /^(?:Autor|Author|Por|By):\s*(.+)/i;
+            const titleRegex = /^(?:Titulo|Title):\s*(.+)/i;
+
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed) continue;
+
+                const keyMatch = trimmed.match(keyRegex);
+                if (keyMatch) detectedKey = keyMatch[1];
+
+                const authorMatch = trimmed.match(authorRegex);
+                if (authorMatch) document.getElementById('song-author').value = authorMatch[1].trim();
+
+                const titleMatch = trimmed.match(titleRegex);
+                if (titleMatch) document.getElementById('song-title').value = titleMatch[1].trim();
+            }
+
+            // 3. Si no hay tono explícito, buscar el primer acorde
+            if (!detectedKey) {
+                for (const line of lines) {
+                    if (isChordLine(line)) {
+                        const tokens = line.trim().split(/\s+/);
+                        for (const token of tokens) {
+                            const cleanToken = token.replace(/^[\(\|]+|[\)\|]+$/g, '');
+                            const match = cleanToken.match(/^([A-G][#b]?m?)/);
+                            if (match) {
+                                detectedKey = match[1];
+                                break;
+                            }
+                        }
+                        if (detectedKey) break;
+                    }
+                }
+            }
+
+            if (detectedKey) {
+                document.getElementById('song-key').value = detectedKey;
+            }
         };
         reader.readAsText(file);
     });
@@ -479,10 +580,23 @@ function openSong(song, targetKey = null, fromView = 'view-songs') {
     returnToView = fromView;
     
     // Reset View State
-    currentFontSize = 16;
+    currentFontSize = 14; // Tamaño más pequeño para mejor visualización en móvil
     updateFontSize();
-    document.getElementById('song-lyrics').classList.remove('lyrics-columns-2');
     stopAutoScroll();
+    
+    // Configurar modo solo letra (automático para himnos)
+    const lyricsContainer = document.getElementById('song-lyrics');
+    const btnToggleLyrics = document.getElementById('btn-toggle-lyrics');
+    
+    if (song.tipo === 'himno') {
+        lyricsContainer.classList.add('lyrics-only');
+        btnToggleLyrics.classList.add('active', 'btn-secondary');
+        btnToggleLyrics.classList.remove('btn-outline-secondary');
+    } else {
+        lyricsContainer.classList.remove('lyrics-only');
+        btnToggleLyrics.classList.remove('active', 'btn-secondary');
+        btnToggleLyrics.classList.add('btn-outline-secondary');
+    }
     
     if (song.tipo === 'himno' && song.autor) {
         document.getElementById('detail-title').textContent = `#${song.titulo} - ${song.autor}`;
@@ -627,8 +741,18 @@ function updateFontSize() {
     document.getElementById('song-lyrics').style.fontSize = `${currentFontSize}px`;
 }
 
-function toggleColumns() {
-    document.getElementById('song-lyrics').classList.toggle('lyrics-columns-2');
+function toggleLyricsOnly() {
+    const container = document.getElementById('song-lyrics');
+    const btn = document.getElementById('btn-toggle-lyrics');
+    container.classList.toggle('lyrics-only');
+    
+    if (container.classList.contains('lyrics-only')) {
+        btn.classList.add('active', 'btn-secondary');
+        btn.classList.remove('btn-outline-secondary');
+    } else {
+        btn.classList.remove('active', 'btn-secondary');
+        btn.classList.add('btn-outline-secondary');
+    }
 }
 
 function toggleAutoScroll() {
@@ -636,10 +760,15 @@ function toggleAutoScroll() {
     if (scrollInterval) {
         stopAutoScroll();
     } else {
-        btn.textContent = '⏹';
+        btn.textContent = '⏸';
         btn.classList.replace('btn-outline-success', 'btn-danger');
-        scrollInterval = setInterval(() => window.scrollBy(0, 1), 50);
+        startScrollInterval();
     }
+}
+
+function startScrollInterval() {
+    if (scrollInterval) clearInterval(scrollInterval);
+    scrollInterval = setInterval(() => window.scrollBy(0, 1), scrollSpeedMs);
 }
 
 function stopAutoScroll() {
@@ -911,6 +1040,14 @@ async function loadRepertoireSongs(repId) {
             const li = document.createElement('li');
             li.className = 'd-flex justify-content-between align-items-center rep-song-item';
             
+            // ID para Drag & Drop
+            li.dataset.id = item.id;
+            
+            if (userProfile.rol === 'admin') {
+                li.draggable = true;
+                addDragEvents(li);
+            }
+
             const songText = document.createElement('div');
             songText.style.flex = '1';
 
@@ -958,6 +1095,85 @@ async function loadRepertoireSongs(repId) {
             songIndex++;
         });
     });
+}
+
+// --- DRAG AND DROP LOGIC ---
+let draggedItem = null;
+
+function addDragEvents(item) {
+    item.addEventListener('dragstart', function(e) {
+        draggedItem = this;
+        e.dataTransfer.effectAllowed = 'move';
+        this.classList.add('opacity-50');
+    });
+
+    item.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        
+        const list = document.getElementById('rep-songs-list');
+        const afterElement = getDragAfterElement(list, e.clientY);
+        
+        if (afterElement == null) {
+            list.appendChild(draggedItem);
+        } else {
+            list.insertBefore(draggedItem, afterElement);
+        }
+    });
+
+    item.addEventListener('dragend', function() {
+        this.classList.remove('opacity-50');
+        draggedItem = null;
+        updateRepertoireOrder();
+    });
+}
+
+function getDragAfterElement(container, y) {
+    // Incluimos headers y songs para poder soltar entre ellos
+    const draggableElements = [...container.querySelectorAll('.rep-song-item:not(.opacity-50), .rep-section-header')];
+
+    return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+async function updateRepertoireOrder() {
+    const list = document.getElementById('rep-songs-list');
+    const items = list.children;
+    let currentSection = '';
+    let orderCounter = 1;
+    const updates = [];
+
+    for (let item of items) {
+        if (item.classList.contains('rep-section-header')) {
+            currentSection = item.textContent;
+        } else if (item.classList.contains('rep-song-item')) {
+            const id = item.dataset.id;
+            if (id) {
+                updates.push({
+                    id: id,
+                    orden: orderCounter++,
+                    section: currentSection
+                });
+            }
+        }
+    }
+
+    // Actualizar en segundo plano
+    const promises = updates.map(u => 
+        supabase.from('repertoire_songs')
+            .update({ orden: u.orden, section: u.section })
+            .eq('id', u.id)
+    );
+
+    await Promise.all(promises);
+    // Opcional: showToast('Orden actualizado', 'success');
 }
 
 function toggleRepertoireEditMode(isEditing) {
@@ -1235,12 +1451,20 @@ function convertChordsOverLyrics(text) {
     const sectionHeaderRegex = /^\s*(\(?(verso|verse|coro|chorus|estribillo|puente|bridge|intro|outro|solo|estrofa|pre-coro|pre-chorus)\b.*)/i;
 
     for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trimEnd();
+        const line = lines[i].trim(); // Alinear a la izquierda quitando espacios iniciales
+        
+        // Evitar líneas vacías excesivas para un interlineado "cabalito"
+        if (!line) {
+            if (output.length > 0 && output[output.length - 1] !== '') {
+                output.push('');
+            }
+            continue;
+        }
         
         // 1. Check for section headers
         if (sectionHeaderRegex.test(line)) {
-            // It's a title, keep it as is, maybe add a blank line before for spacing
-            if (output.length > 0 && output[output.length - 1].trim() !== '') {
+            // Asegurar solo un salto de línea antes de la sección
+            if (output.length > 0 && output[output.length - 1] !== '') {
                 output.push('');
             }
             output.push(line);
@@ -1251,7 +1475,7 @@ function convertChordsOverLyrics(text) {
         if (isChordLine(line)) {
             // Look ahead for a lyric line
             if (i + 1 < lines.length) {
-                const nextLine = lines[i+1].trimEnd();
+                const nextLine = lines[i+1].trim();
                 // Make sure next line is not a chord line, not a section header, and not empty
                 if (nextLine.trim().length > 0 && !isChordLine(nextLine) && !sectionHeaderRegex.test(nextLine)) {
                     // Merge chord line with lyric line
@@ -1261,7 +1485,8 @@ function convertChordsOverLyrics(text) {
                 }
             }
             // If it's a chord line with no lyrics below (e.g., instrumental part), just wrap chords
-            output.push(line.replace(/([A-G][#b]?(?:m|min|maj|dim|aug|sus|add|7|9|11|13|6|\/|[0-9]|\(|\))*)/g, '[$1]'));
+            const chordExtractRegex = /([A-G][#b]?(?:[0-9]|m|M|i|n|a|j|d|u|g|s|b|#|-|\+|°|ø|(?:\([^)]*\)))*(?:\/[A-G][#b]?(?:[0-9]|m|M|i|n|a|j|d|u|g|s|b|#|-|\+|°|ø|(?:\([^)]*\)))*)?)|(N\.?C\.?)/gi;
+            output.push(line.replace(chordExtractRegex, '[$1$2]'));
         } else {
             // 3. It's a lyric line (or empty line)
             output.push(line);
@@ -1274,31 +1499,54 @@ function isChordLine(line) {
     if (!line.trim()) return false;
     const tokens = line.trim().split(/\s+/).filter(t => t.length > 0);
     if (tokens.length === 0) return false;
-
-    // Regex flexible para acordes
-    // Mejorado para incluir b, #, +, °, ø en sufijos (ej: C7#9, Bm7b5)
-    const chordRegex = /^([A-G][#b]?)(m|min|maj|dim|aug|sus|add|7|9|11|13|6|\/|[0-9]|\(|\)|#|b|\+|°|ø|-)*$/;
     
-    // If any token is a long word that is not a chord, it's a lyric line.
-    if (tokens.some(token => token.length > 6 && !chordRegex.test(token))) {
+    // Regex mejorado para acordes complejos y Slash Chords
+    const chordRegex = /^([A-G][#b]?)(?:[0-9]|m|M|i|n|a|j|d|u|g|s|b|#|-|\+|°|ø|(?:\([^)]*\)))*(?:\/[A-G][#b]?(?:[0-9]|m|M|i|n|a|j|d|u|g|s|b|#|-|\+|°|ø|(?:\([^)]*\)))*)?$/;
+    const ncRegex = /^N\.?C\.?$/i;
+    
+    // Symbols often found in chord lines (bars, repeats, etc)
+    const symbolRegex = /^(\||\/|%|\\|-|\.|:|\(|\)|\[|\]|x\d+|\d+x)+$/i;
+
+    // If any token is a long word (>12 chars) that is not a chord, it's likely lyrics.
+    if (tokens.some(token => token.length > 12 && !chordRegex.test(token))) {
         return false;
     }
-
-    const chordTokens = tokens.filter(token => chordRegex.test(token));
     
-    // If there are no chords, it's not a chord line.
-    if (chordTokens.length === 0) return false;
+    let chordCount = 0;
+    let validCount = 0;
 
-    // If at least 50% of tokens are chords, consider it a chord line.
-    return (chordTokens.length / tokens.length) >= 0.5;
+    tokens.forEach(token => {
+        // 1. Intentar match directo (ej: C(add9))
+        if (chordRegex.test(token) || ncRegex.test(token)) {
+            chordCount++;
+            validCount++;
+        } else {
+            // 2. Intentar limpiando paréntesis/barras externos (ej: (C) o |C|)
+            const cleanToken = token.replace(/^[\(\|\[]+|[\)\|\]]+$/g, ''); // Agregado soporte para brackets y limpieza más agresiva
+            if (chordRegex.test(cleanToken) || ncRegex.test(cleanToken)) {
+                chordCount++;
+                validCount++;
+            } else if (symbolRegex.test(token)) {
+                validCount++;
+            }
+        }
+    });
+    
+    // Must have at least one actual chord
+    if (chordCount === 0) return false;
+
+    // If at least 50% of tokens are chords or valid symbols, consider it a chord line.
+    return (validCount / tokens.length) >= 0.5;
 }
 
 function mergeLines(chordLine, lyricLine) {
     const chords = [];
-    const regex = /([A-G][#b]?(?:m|min|maj|dim|aug|sus|add|7|9|11|13|6|\/|[0-9]|\(|\))*)/g;
+    // Regex matching isChordLine logic but global
+    const regex = /([A-G][#b]?(?:[0-9]|m|M|i|n|a|j|d|u|g|s|b|#|-|\+|°|ø|(?:\([^)]*\)))*(?:\/[A-G][#b]?(?:[0-9]|m|M|i|n|a|j|d|u|g|s|b|#|-|\+|°|ø|(?:\([^)]*\)))*)?)|(N\.?C\.?)/gi;
+    
     let match;
     while ((match = regex.exec(chordLine)) !== null) {
-        chords.push({ text: match[1], index: match.index });
+        chords.push({ text: match[0], index: match.index });
     }
     
     // Insertar de atrás hacia adelante para no alterar índices

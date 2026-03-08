@@ -11,6 +11,13 @@ const normalizeMap = {
 export function transposeChord(chord, semitones) {
     if (!chord || chord.trim() === '') return chord;
     
+    // Manejo de acordes con bajo (Slash chords) ej: A/C#
+    if (chord.includes('/')) {
+        const parts = chord.split('/');
+        // Transponer cada parte individualmente (nota y bajo)
+        return parts.map(part => transposeChord(part, semitones)).join('/');
+    }
+
     // Regex para separar la nota base (ej: C, F#) del sufijo (ej: m, 7, sus4)
     const regex = /^([A-G][#b]?)(.*)$/;
     const match = chord.match(regex);
