@@ -87,6 +87,48 @@ document.addEventListener('DOMContentLoaded', async () => {
     importModal = new bootstrap.Modal(document.getElementById('importModal'));
     bulkImportModal = new bootstrap.Modal(document.getElementById('bulkImportModal'));
 
+    // Inicializar historial para el botón atrás del celular
+    history.replaceState({ viewId: 'view-home' }, '', '#home');
+    window.addEventListener('popstate', (event) => {
+        if (event.state && event.state.viewId) {
+            showView(event.state.viewId, false);
+        }
+    });
+
+    // Swipe gesture para cambiar tabs en Canciones
+    const songsTabContent = document.getElementById('songsTabContent');
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    songsTabContent.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+    }, { passive: true });
+
+    songsTabContent.addEventListener('touchend', (e) => {
+        const touchEndX = e.changedTouches[0].screenX;
+        const touchEndY = e.changedTouches[0].screenY;
+        const diffX = touchEndX - touchStartX;
+        const diffY = touchEndY - touchStartY;
+
+        // Detectar swipe horizontal (mayor a 50px y movimiento horizontal dominante)
+        if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+            const tabs = ['hymns-tab', 'jubilo-tab', 'adoracion-tab'];
+            const activeTab = document.querySelector('#songsTab .nav-link.active');
+            if (!activeTab) return;
+
+            const currentIndex = tabs.indexOf(activeTab.id);
+            if (currentIndex === -1) return;
+
+            // Swipe Izquierda (diffX < 0) -> Siguiente tab, Derecha -> Anterior
+            const nextIndex = diffX < 0 ? Math.min(currentIndex + 1, tabs.length - 1) : Math.max(currentIndex - 1, 0);
+            
+            if (nextIndex !== currentIndex) {
+                new bootstrap.Tab(document.getElementById(tabs[nextIndex])).show();
+            }
+        }
+    }, { passive: true });
+
     await populateMusicianSelectors();
     // 2. Event Listeners Navegación
     document.getElementById('logout-btn').addEventListener('click', logout);
@@ -119,10 +161,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     document.getElementById('back-to-songs').addEventListener('click', (e) => {
-        showView(returnToView);
+        history.back(); // Usar historial nativo para mejor UX móvil
     });
     document.getElementById('back-to-repertoires').addEventListener('click', () => {
-        showView('view-repertoires');
+        history.back(); // Usar historial nativo
     });
 
     // 3. Event Listeners Transposición
@@ -216,9 +258,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // Theme Selector
-    document.getElementById('rep-theme-select').addEventListener('change', (e) => {
+    document.getElementById('rep-theme-select').addEventListener('change', async (e) => {
+        const newTheme = e.target.value;
         const content = document.getElementById('repertoire-content');
-        content.className = `${e.target.value} p-4 mx-auto shadow-lg`;
+        content.className = `${newTheme} p-4 mx-auto shadow-lg`;
+
+        // Guardar automáticamente si ya hay un repertorio cargado
+        if (currentRepertoire && currentRepertoire.id) {
+            currentRepertoire.tema = newTheme;
+            const { error } = await supabase
+                .from('repertoires')
+                .update({ tema: newTheme })
+                .eq('id', currentRepertoire.id);
+            
+            if (error) console.error('Error al guardar el tema:', error);
+        }
     });
 
     // Import Logic
@@ -412,11 +466,14 @@ async function exportElementAsPNG(element, filename, options = {}) {
     }
 }
 
-function showView(viewId) {
+function showView(viewId, pushToHistory = true) {
     ['view-home', 'view-songs', 'view-song-detail', 'view-repertoires', 'view-repertoire-detail', 'view-profile'].forEach(id => {
         document.getElementById(id).classList.add('d-none');
     });
     document.getElementById(viewId).classList.remove('d-none');
+    if (pushToHistory) {
+        history.pushState({ viewId }, '', '#' + viewId.replace('view-', ''));
+    }
 }
 
 function closeNavbar() {
@@ -532,6 +589,10 @@ async function loadSongs() {
 
         item.innerHTML = checkboxHTML + `<div class="flex-grow-1">${titleHTML}</div>`;
 
+        // Preparar texto para búsqueda: Título, Autor y Letra (sin acordes)
+        const cleanLyrics = (song.letra_acordes || '').replace(/\[[^\]]*\]/g, ' ').replace(/\s+/g, ' ');
+        item.dataset.search = `${song.titulo} ${song.autor || ''} ${cleanLyrics}`.toLowerCase();
+
         item.addEventListener('click', (e) => {
             e.preventDefault();
             if (isSelectionMode) {
@@ -575,8 +636,9 @@ function filterSongsList(e) {
     const term = e.target.value.toLowerCase();
     const items = document.querySelectorAll('#hymns-list a, #jubilo-list a, #adoracion-list a');
     items.forEach(item => {
-        const text = item.textContent.toLowerCase();
-        if (text.includes(term)) {
+        // Buscar en el dataset preparado (que incluye letra) o fallback al texto visible
+        const searchContent = item.dataset.search || item.textContent.toLowerCase();
+        if (searchContent.includes(term)) {
             item.classList.remove('d-none');
         } else {
             item.classList.add('d-none');
@@ -784,7 +846,7 @@ function stopAutoScroll() {
     const btn = document.getElementById('btn-auto-scroll');
     if (scrollInterval) clearInterval(scrollInterval);
     scrollInterval = null;
-    btn.textContent = '▶';
+    btn.innerHTML = '<i class="bi bi-play-fill"></i>';
     btn.classList.replace('btn-danger', 'btn-outline-success');
 }
 
@@ -985,6 +1047,11 @@ async function openRepertoire(rep) {
     document.getElementById('edit-rep-guitar').value = rep.guitarra || '';
     document.getElementById('edit-rep-drums').value = rep.bateria || '';
     document.getElementById('edit-rep-bass').value = rep.bajo || '';
+
+    // Cargar Tema Guardado (o usar defecto)
+    const savedTheme = rep.tema || 'theme-morning';
+    document.getElementById('rep-theme-select').value = savedTheme;
+    document.getElementById('repertoire-content').className = `${savedTheme} p-4 mx-auto shadow-lg`;
 
     await loadRepertoireSongs(rep.id);
     showView('view-repertoire-detail');
@@ -1213,6 +1280,7 @@ async function saveRepertoireDetails() {
         fecha: document.getElementById('edit-rep-date').value,
         hora: document.getElementById('edit-rep-time').value,
         uniforme: document.getElementById('edit-rep-uniform').value,
+        tema: document.getElementById('rep-theme-select').value, // Asegurar que se guarda el tema actual
         director: document.getElementById('edit-rep-director').value,
         coristas: document.getElementById('edit-rep-singers').value,
         teclado: document.getElementById('edit-rep-piano').value,
@@ -1276,6 +1344,7 @@ async function saveRepertoire() {
         guitarra: document.getElementById('rep-guitar-input').value,
         bateria: document.getElementById('rep-drums-input').value,
         bajo: document.getElementById('rep-bass-input').value,
+        tema: 'theme-morning', // Tema por defecto al crear
         created_by: userProfile.id
     };
 
@@ -1460,10 +1529,11 @@ function convertChordsOverLyrics(text) {
     const sectionHeaderRegex = /^\s*(\(?(verso|verse|coro|chorus|estribillo|puente|bridge|intro|outro|solo|estrofa|pre-coro|pre-chorus)\b.*)/i;
 
     for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim(); // Alinear a la izquierda quitando espacios iniciales
+        const line = lines[i]; // No hacer trim aquí para preservar la posición relativa
+        const trimmedLine = line.trim();
         
         // Evitar líneas vacías excesivas para un interlineado "cabalito"
-        if (!line) {
+        if (!trimmedLine) {
             if (output.length > 0 && output[output.length - 1] !== '') {
                 output.push('');
             }
@@ -1476,7 +1546,7 @@ function convertChordsOverLyrics(text) {
             if (output.length > 0 && output[output.length - 1] !== '') {
                 output.push('');
             }
-            output.push(line);
+            output.push(trimmedLine);
             continue;
         }
 
@@ -1484,21 +1554,23 @@ function convertChordsOverLyrics(text) {
         if (isChordLine(line)) {
             // Look ahead for a lyric line
             if (i + 1 < lines.length) {
-                const nextLine = lines[i+1].trim();
+                const nextLine = lines[i+1];
+                const nextTrimmed = nextLine.trim();
                 // Make sure next line is not a chord line, not a section header, and not empty
-                if (nextLine.trim().length > 0 && !isChordLine(nextLine) && !sectionHeaderRegex.test(nextLine)) {
+                if (nextTrimmed.length > 0 && !isChordLine(nextLine) && !sectionHeaderRegex.test(nextLine)) {
                     // Merge chord line with lyric line
-                    output.push(mergeLines(line, nextLine));
+                    // Usamos las líneas originales para calcular la posición correcta
+                    output.push(mergeLines(line, nextLine).trim());
                     i++; // Skip the next line as it's already processed
                     continue;
                 }
             }
             // If it's a chord line with no lyrics below (e.g., instrumental part), just wrap chords
             const chordExtractRegex = /([A-G][#b]?(?:[0-9]|m|M|i|n|a|j|d|u|g|s|b|#|-|\+|°|ø|(?:\([^)]*\)))*(?:\/[A-G][#b]?(?:[0-9]|m|M|i|n|a|j|d|u|g|s|b|#|-|\+|°|ø|(?:\([^)]*\)))*)?)|(N\.?C\.?)/gi;
-            output.push(line.replace(chordExtractRegex, '[$1$2]'));
+            output.push(trimmedLine.replace(chordExtractRegex, '[$1$2]'));
         } else {
             // 3. It's a lyric line (or empty line)
-            output.push(line);
+            output.push(trimmedLine);
         }
     }
     return output.join('\n');
