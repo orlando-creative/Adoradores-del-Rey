@@ -6,43 +6,39 @@ export function renderSong(lyricsWithChords, semitones = 0) {
     const lines = lyricsWithChords.split('\n');
     let html = '';
     
-    // Regex para detectar títulos de sección (Coro, Estribillo, Puente, etc.)
+    // Regex para detectar títulos de sección
     const sectionHeaderRegex = /^\s*(\(?(verso|verse|coro|chorus|estribillo|puente|bridge|intro|outro|solo|estrofa|pre-coro|pre-chorus)\b.*)/i;
     let inChorus = false;
 
     lines.forEach(line => {
-        // 1. Si es un título de sección, renderizar con estilo especial
+        // 1. Título de sección
         if (sectionHeaderRegex.test(line)) {
             const lowerLine = line.toLowerCase();
-            // Determinar si la sección actual es un coro y resetear si no lo es
             const isThisSectionAChorus = lowerLine.includes('coro') || lowerLine.includes('chorus') || lowerLine.includes('estribillo');
             inChorus = isThisSectionAChorus;
 
-            let headerContent = line;
-            // Poner en negrita solo la palabra clave si es un coro
+            let headerContent = line.trim();
             if (isThisSectionAChorus) {
-                headerContent = line.replace(/(coro|chorus|estribillo)/i, '<strong>$1</strong>');
+                headerContent = headerContent.replace(/(coro|chorus|estribillo)/i, '<strong>$1</strong>');
             }
-            
             html += `<div class="section-header">${headerContent}</div>`;
             return;
         }
 
-        // 2. Si es línea vacía, se termina la sección de coro
+        // 2. Línea vacía
         if (!line.trim()) {
             inChorus = false;
-            html += '<div class="line-wrapper" style="min-height: 1em;">&nbsp;</div>';
+            html += '<div class="line-wrapper" style="min-height:1.2em">&nbsp;</div>';
             return;
         }
 
         const parts = line.split(/(\[[^\]]+\])/g);
         
-        // Detectar si la línea es instrumental (solo acordes, sin letra)
-        const hasLyricsText = parts.some((part, index) => index % 2 === 0 && part.trim().length > 0);
+        // ¿Línea instrumental? (solo acordes, sin letra)
+        const hasLyricsText = parts.some((part, idx) => idx % 2 === 0 && part.trim().length > 0);
         const isInstrumental = !hasLyricsText;
-        // Reducir espacio si es instrumental para que no ocupe tanto
-        const wrapperStyle = isInstrumental ? 'margin-bottom: 2px; line-height: 1.1;' : 'margin-bottom: 6px; line-height: 1.2;';
-        let lineHtml = `<div class="line-wrapper ${inChorus ? 'chorus-line' : ''}" style="${wrapperStyle}">`;
+
+        let lineHtml = `<div class="line-wrapper${inChorus ? ' chorus-line' : ''}">`;
         
         for (let i = 0; i < parts.length; i++) {
             const part = parts[i];
@@ -50,53 +46,50 @@ export function renderSong(lyricsWithChords, semitones = 0) {
                 let chord = part.slice(1, -1);
                 let transposed = transposeChord(chord, semitones);
                 
-                // Buscar el texto asociado a este acorde (siguiente parte)
+                // ¿Qué texto sigue a este acorde?
                 let text = null;
                 if (i + 1 < parts.length && !parts[i+1].startsWith('[')) {
-                    text = parts[i+1];
-                    i++; // Saltamos la parte de texto ya que la consumimos aquí
+                    text = parts[i + 1];
+                    i++; // consumimos la parte de texto
                 }
                 
-                // Si es instrumental, no usar &nbsp; para que no ocupe espacio vertical extra
-                const emptyLyricContent = isInstrumental ? '' : '&nbsp;';
+                const emptyLyric = isInstrumental ? '' : '\u00a0'; // &nbsp; solo si hay letra en la línea
 
                 if (text) {
-                    // Tokenizar por espacios para permitir wrapping en móviles
                     const tokens = text.split(/(\s+)/);
-                    // Identificar si hay palabras reales
                     const hasWords = tokens.some(t => t.trim().length > 0);
 
                     if (hasWords) {
                         let chordAssigned = false;
                         tokens.forEach(token => {
                             if (/^\s+$/.test(token)) {
-                                lineHtml += token; // Mantiene los espacios originales
+                                // Preservar espacios entre palabras con un span de lyrics
+                                lineHtml += `<span class="chord-word"><span class="chord">&nbsp;</span><span class="lyrics">${token}</span></span>`;
                             } else if (token) {
-                                // Asignar el acorde a la primera palabra encontrada
-                                const currentChord = !chordAssigned ? transposed : '&nbsp;';
-                                // Estilo CifraClub: Acorde naranja, negrita, apilado sobre la letra
-                                lineHtml += `<span class="chord-word" style="display: inline-flex; flex-direction: column; vertical-align: bottom; margin-right: 1px;"><span class="chord" style="font-weight: 700; color: #eb5e00; font-size: 0.95em; margin-bottom: -1px;">${currentChord}</span><span class="lyrics" style="font-weight: 400; color: #000;">${token}</span></span>`;
+                                const currentChord = !chordAssigned ? transposed : '\u00a0';
+                                lineHtml += `<span class="chord-word"><span class="chord">${currentChord}</span><span class="lyrics">${token}</span></span>`;
                                 chordAssigned = true;
                             }
                         });
                     } else {
-                        // Solo espacios o texto vacío (ej: [C]  [D])
-                        lineHtml += `<span class="chord-word" style="display: inline-flex; flex-direction: column; vertical-align: bottom; margin-right: 2px;"><span class="chord" style="font-weight: 700; color: #eb5e00; font-size: 0.95em; margin-bottom: -1px;">${transposed}</span><span class="lyrics" style="font-weight: 400; color: #000;">${emptyLyricContent}</span></span>` + text;
+                        // Solo espacios o vacío (e.g. [C]  [D])
+                        lineHtml += `<span class="chord-word"><span class="chord">${transposed}</span><span class="lyrics">${emptyLyric}</span></span>${text}`;
                     }
                 } else {
-                    // Sin texto (ej: [C][D])
-                    lineHtml += `<span class="chord-word" style="display: inline-flex; flex-direction: column; vertical-align: bottom; margin-right: 2px;"><span class="chord" style="font-weight: 700; color: #eb5e00; font-size: 0.95em; margin-bottom: -1px;">${transposed}</span><span class="lyrics" style="font-weight: 400; color: #000;">${emptyLyricContent}</span></span>`;
+                    // Sin texto siguiente (e.g. [C][D])
+                    lineHtml += `<span class="chord-word"><span class="chord">${transposed}</span><span class="lyrics">${emptyLyric}</span></span>`;
                 }
             } else {
+                // Texto sin acorde previo
                 if (part) {
-                    // Texto sin acorde previo. Tokenizar también para wrapping.
                     const tokens = part.split(/(\s+)/);
                     tokens.forEach(token => {
                         if (/^\s+$/.test(token)) {
-                            lineHtml += token;
+                            // Espacios sin acorde: usar chord-word con placeholder invisible para mantener altura
+                            lineHtml += `<span class="chord-word"><span class="chord" style="visibility:hidden">&nbsp;</span><span class="lyrics">${token}</span></span>`;
                         } else if (token) {
-                            // Texto sin acorde: renderizar simple para ahorrar espacio vertical (cabalito)
-                            lineHtml += `<span class="lyrics" style="font-weight: 400; color: #000;">${token}</span>`;
+                            // Texto sin acorde: misma estructura pero acorde invisible para alineación uniforme
+                            lineHtml += `<span class="chord-word"><span class="chord" style="visibility:hidden">&nbsp;</span><span class="lyrics">${token}</span></span>`;
                         }
                     });
                 }

@@ -1,111 +1,274 @@
-/* Mobile-specific styles for the church music system */
-/* Hereda estilos base de main.css, aquí solo overrides */
+/* ── Mobile overrides — mobile.css ── */
 
-.container {
-    padding: 10px;
-    max-width: 100%;
-}
+/* ════════════════════════════════
+   MOBILE: Bottom Tab Bar Navigation
+   ════════════════════════════════ */
+@media (max-width: 767px) {
+    body { font-size: 14px; padding-bottom: 68px; }
 
-.header {
-    text-align: left;
-    padding: 10px 0;
-}
+    /* Header nav hidden on mobile — replaced by bottom bar */
+    header { display: none !important; }
 
-.song-list, .repertoire-list {
-    list-style-type: none;
-    padding: 0;
-}
-
-/* Mejoras en botones para touch */
-@media (max-width: 768px) {
-    .btn {
-        padding: 0.6rem 1rem; /* Área de toque más grande */
-        font-size: 0.9rem;
-    }
-}
-
-/* Responsive Grid */
-@media (max-width: 576px) {
-    .container {
-        padding: 8px;
+    /* Bottom fixed tab bar */
+    body::after { content: ''; display: block; height: calc(68px + env(safe-area-inset-bottom, 0px)); }
+    .bottom-nav {
+        display: flex !important;
+        padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+        height: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+        z-index: 9990 !important;
     }
 
-    h1 { font-size: 1.8rem; }
-    h2 { font-size: 1.5rem; }
-    h3 { font-size: 1.3rem; }
+    /* HIDE bottom nav when inside a song detail */
+    body.in-song .bottom-nav { display: none !important; }
+    body.in-song { padding-bottom: 0 !important; }
+    body.in-song::after { display: none !important; }
 
-    .navbar-brand {
+    .container, .container-fluid { padding: 0 .75rem; }
+    main.container { margin-top: .75rem !important; }
+
+    h1 { font-size: 1.4rem; }
+    h2 { font-size: 1.2rem; }
+
+    /* Hero compact */
+    .hero-section { padding: 1.25rem !important; }
+    .hero-section .py-5 { padding-top: .75rem !important; padding-bottom: .75rem !important; }
+
+    /* Buttons — bigger touch area */
+    .btn { padding: .65rem 1rem; font-size: .875rem; min-height: 42px; }
+    .btn-sm { padding: .45rem .8rem; font-size: .82rem; min-height: 36px; }
+
+    /* Prevent iOS zoom on inputs */
+    .form-control, .form-select { font-size: 16px !important; }
+
+    /* ── Song tools bar: FIXED AT TOP on mobile ── */
+    .song-tools-bar {
+        position: fixed !important;
+        top: 0 !important;
+        bottom: auto !important;
+        left: 0 !important;
+        right: 0 !important;
+        border-radius: 0 !important;
+        padding: .4rem .75rem !important;
+        z-index: 9980 !important;
+        box-shadow: 0 2px 12px rgba(0,0,0,.15) !important;
+        background: var(--c-surface) !important;
+        border-bottom: 1px solid var(--c-border) !important;
+        border-top: none !important;
+        border-left: none !important;
+        border-right: none !important;
+    }
+    /* Add top padding to content so it doesn't hide behind toolbar */
+    #view-song-detail { padding-top: 56px; padding-bottom: 1.5rem; }
+    #view-repertoire-detail .song-tools-bar {
+        position: fixed !important;
+        top: 0 !important;
+        bottom: auto !important;
+        left: 0 !important;
+        right: 0 !important;
+        border-radius: 0 !important;
+        z-index: 9999 !important;
+        background: #fff !important;
+        box-shadow: 0 2px 12px rgba(0,0,0,.10) !important;
+        border-bottom: 2px solid #e0e0e0 !important;
+        padding-top: .5rem !important;
+        padding-bottom: .5rem !important;
+    }
+    #view-repertoire-detail { padding-top: 70px; }
+    /* Selector de tema más visible en móvil */
+    #rep-theme-select {
+        font-size: 1.1rem !important;
+        font-weight: 700 !important;
+        min-width: 130px !important;
+        border: 2px solid #b3d0f7 !important;
+        background: #f7fafc !important;
+        color: #1a2a4a !important;
+        border-radius: 12px !important;
+        box-shadow: 0 2px 8px rgba(80,120,180,0.07);
+        margin-right: 8px;
+    }
+    #rep-theme-select:focus {
+        border-color: #0e1d35 !important;
+        outline: none !important;
+    }
+    .theme-night #rep-theme-select {
+        background: #181818 !important;
+        color: #fff !important;
+        border-color: #555 !important;
+    }
+    .theme-special #rep-theme-select {
+        background: #1c0e35 !important;
+        color: #ddd6fe !important;
+        border-color: #a78bfa !important;
+    }
+
+    .card-body { padding: 1rem; }
+
+    /* ── Repertoire: scaled down nicely for mobile ── */
+    #repertoire-content {
+        padding: 1rem !important;
+        border-radius: 6px !important;
+    }
+    .rep-header-title { font-size: 1.4rem !important; }
+    .rep-meta-label { font-size: 0.65rem !important; margin-bottom: 0.5rem !important; }
+    .rep-meta-value { font-size: 1.1rem !important; }
+    .rep-uniform-box { font-size: .82rem !important; padding: .3rem 1.2rem !important; }
+    
+    /* Músicos en mobile */
+    .rep-musicians-section {
+        flex-direction: column !important;
+        gap: 1rem !important;
+    }
+    .rep-musicians-column {
+        padding-left: 0 !important;
+    }
+    .rep-musicians-divider {
+        display: none !important;
+    }
+    .rep-musicians-title { font-size: 0.9rem !important; }
+    .rep-musician-item { font-size: 0.85rem !important; margin-bottom: 0.5rem !important; }
+    
+    .rep-section-header { font-size: .9rem !important; margin-top: 1.2rem !important; margin-bottom: 1rem !important; padding: 1rem 0 0.5rem 0 !important; }
+    .rep-song-title { font-size: 1rem !important; }
+    .rep-song-author { font-size: .75rem !important; }
+    .rep-key-badge { font-size: .75rem !important; padding: 0.4rem 0.7rem !important; }
+    .rep-song-item { padding: 0.75rem 0 !important; gap: 0.5rem !important; }
+    .rep-song-index { font-size: 1rem !important; }
+
+    /* Rep col-divider on mobile: stack vertically */
+    .rep-col-divider {
+        border-right: none !important;
+        border-bottom: 1.5px solid rgba(0, 0, 0, .15) !important;
+        padding-bottom: .75rem !important;
+        margin-bottom: .75rem !important;
+        padding-right: 0 !important;
+    }
+    [data-theme="dark"] .rep-col-divider,
+    .theme-night .rep-col-divider,
+    .theme-special .rep-col-divider {
+        border-bottom-color: rgba(255, 255, 255, .2) !important;
+    }
+    .pb-md-0 { padding-bottom: .5rem; }
+    .ps-md-4 { padding-left: 0; }
+
+    /* Modals from bottom like bottom sheet */
+    .modal { padding: 0; align-items: flex-end; }
+    .modal-dialog { max-width: 100%; width: 100%; margin: 0; }
+    .modal-content {
+        border-radius: var(--r-xl) var(--r-xl) 0 0;
+        max-height: 92vh;
+        display: flex;
+        flex-direction: column;
+        border: none;
+        padding-top: .5rem;
+    }
+    .modal-content::before {
+        content: "";
+        width: 40px; height: 5px;
+        background: var(--c-border2);
+        border-radius: 10px;
+        margin: .5rem auto .2rem;
+        display: block;
+        opacity: 0.6;
+    }
+    .modal-header { border-bottom: none; padding: .5rem 1.5rem 1rem; }
+    .modal-body { overflow-y: auto; flex: 1; padding: 1rem 1.5rem 2rem; }
+
+    /* Tabs horizontal scrollable */
+    .nav.nav-tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .nav-tabs .nav-link { padding: .5rem .85rem; font-size: .85rem; white-space: nowrap; }
+
+    /* Toast above bottom nav */
+    #toast-container {
+        right: .75rem;
+        bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+        left: .75rem;
+        align-items: center;
+        z-index: 9995 !important;
+    }
+    body.in-song #toast-container {
+        bottom: 1rem;
+    }
+    .toast { min-width: unset; max-width: 100%; width: 100%; }
+
+    /* Lyrics */
+    .lyrics-container { padding: .85rem !important; }
+}
+
+@media (min-width: 768px) {
+    /* Desktop: show header nav, hide bottom nav */
+    .bottom-nav { display: none !important; }
+    main.container { margin-top: 1.5rem; }
+    .song-tools-bar { top: 10px; position: sticky; }
+    .pb-md-0 { padding-bottom: 0 !important; }
+    .ps-md-4  { padding-left: 1.5rem !important; }
+    .gap-md-5 { gap: 3rem !important; }
+}
+
+/* ════════════════════════════════════════════════════════
+   HOME PAGE RESPONSIVE
+   ════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+    .home-hero {
+        padding: 1rem 0 0.5rem 0;
+    }
+
+    .hero-welcome h1 {
+        font-size: 1.8rem;
+    }
+
+    .home-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .stat-card {
+        padding: 1rem;
+    }
+
+    .stat-icon {
+        width: 40px;
+        height: 40px;
         font-size: 1.2rem;
     }
 
-    .btn-group {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 5px;
-        margin-bottom: 1rem;
+    .stat-number {
+        font-size: 1.4rem;
     }
 
-    .btn-group .btn {
-        flex: 1;
-        min-width: 70px;
-        padding: 8px 6px;
-        font-size: 12px;
-    }
-
-    .modal-dialog {
-        margin: 10px;
-        width: auto;
-    }
-
-    .form-select, .form-control {
-        font-size: 16px;
-    }
-
-    .lyrics-container {
-        font-size: 12px;
-        line-height: 2rem;
-    }
-
-    .list-group-item {
-        padding: 10px;
-        font-size: 14px;
-    }
-
-    .card {
+    .section-header {
         margin-bottom: 0.75rem;
-        padding: 0.75rem;
     }
 
-    /* Ajuste menú móvil */
-    .navbar-collapse {
-        background-color: rgba(0,0,0,0.1);
-        margin: 0 -1rem;
-        padding: 1rem;
-        border-top: 1px solid rgba(255,255,255,0.1);
-    }
-
-    .ratio {
-        max-height: 300px;
-    }
-}
-
-@media (max-width: 768px) {
-    .col-md-4, .col-md-6 {
-        flex: 0 0 100%;
-        max-width: 100%;
-    }
-
-    .btn-group {
+    .home-actions {
         flex-direction: column;
+        gap: 0.75rem;
     }
 
-    .btn-group .btn {
-        width: 100%;
+    .action-btn {
+        padding: 0.85rem;
+        font-size: 0.9rem;
+    }
+
+    .recent-reps-list {
+        gap: 0.5rem;
+    }
+
+    .recent-rep-item {
+        padding: 0.85rem;
     }
 }
 
-@media (min-width: 769px) {
-    .container {
-        padding: 1.5rem;
+@media (min-width: 768px) {
+    .home-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+
+    .home-actions {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .action-btn {
+        padding: 1.25rem;
     }
 }

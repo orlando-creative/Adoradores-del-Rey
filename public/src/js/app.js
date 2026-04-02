@@ -2,6 +2,12 @@ import { supabase } from './supabaseClient.js';
 import { getCurrentProfile, logout } from './auth.js';
 import { renderSong } from './chords-render.js';
 import { scales } from './transpose.js';
+import { state } from './modules/state.js';
+import { showToast, showView, toggleLoading, showSkeletons, showCardSkeletons, closeNavbar, changeFontSize, toggleAutoScroll, startScrollInterval, stopAutoScroll, toggleLyricsOnly } from './modules/ui.js';
+import { exportElementAsPNG } from './modules/export.js';
+
+// Usaremos "state" como contenedor de variables globales para migrar a poco a módulos
+// state.currentSong; state.currentRepertoire; etc.
 
 // Inyectar estilos para modo "Solo Letra" y Himnos
 const lyricsStyles = document.createElement('style');
@@ -47,6 +53,7 @@ lyricsStyles.textContent = `
 `;
 document.head.appendChild(lyricsStyles);
 
+// Migrados a module state.js, además mantenemos las variables locales para evitar romper código legacy no migrado aún.
 let currentSong = null;
 let currentSemitones = 0;
 let currentTransposedSuffix = null;
@@ -57,13 +64,16 @@ let repertoireModal = null;
 let addSongModal = null;
 let transposeModal = null;
 let importModal = null;
-let bulkImportModal = null;
 let allSongsForModal = [];
-let currentFontSize = 15; // Tamaño óptimo inicial
+let currentFontSize = 15;
 let isSelectionMode = false;
 let scrollInterval = null;
-let scrollSpeedMs = 50; // Velocidad inicial (ms por pixel)
+let scrollSpeedMs = 50;
 let returnToView = 'view-songs';
+
+state.currentSong = currentSong;
+state.currentRepertoire = currentRepertoire;
+state.allSongsForModal = allSongsForModal;
 
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Verificar Auth
@@ -85,7 +95,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     addSongModal = new bootstrap.Modal(document.getElementById('addSongModal'));
     transposeModal = new bootstrap.Modal(document.getElementById('transposeModal'));
     importModal = new bootstrap.Modal(document.getElementById('importModal'));
-    bulkImportModal = new bootstrap.Modal(document.getElementById('bulkImportModal'));
 
     // Inicializar historial para el botón atrás del celular
     history.replaceState({ viewId: 'view-home' }, '', '#home');
@@ -158,6 +167,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.preventDefault();
         closeNavbar();
         showView('view-home');
+        loadHomeData();
     });
 
     document.getElementById('back-to-songs').addEventListener('click', (e) => {
@@ -183,7 +193,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (scrollInterval) startScrollInterval();
     });
 
-    // 4. Exportar PNG (Lógica mejorada)
+    // 4. Exportar PNG
     document.getElementById('export-png').addEventListener('click', () => {
         const element = document.getElementById('view-song-detail');
         const title = currentSong.titulo || 'cancion';
@@ -193,35 +203,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('export-rep-png').addEventListener('click', async () => {
         const element = document.getElementById('repertoire-content');
         const title = currentRepertoire.titulo || 'repertorio';
-
-        // Guardar estilos originales para restaurarlos después
-        const originalStyleAttr = element.getAttribute('style') || '';
-        const mutedElements = element.querySelectorAll('.text-muted');
-        const originalMutedStyles = Array.from(mutedElements).map(el => el.getAttribute('style') || '');
-
-        // Configuración para exportación (Estilo A4)
-        // Respetamos el tema seleccionado, pero forzamos dimensiones A4
-        element.style.width = '794px'; // Ancho estándar A4 a 96dpi
-        element.style.maxWidth = 'none';
-        element.style.margin = '0 auto';
-        element.style.padding = '30px'; // Padding reducido para más contenido
-        element.style.boxShadow = 'none';
-        element.style.borderRadius = '0';
-
-        const options = {
-            scale: 2, // Alta calidad (2x)
-            useCORS: true,
-            backgroundColor: null, // Usar el del elemento (transparente/heredado)
-            windowWidth: 1200, // Simular desktop para mantener columnas lado a lado
-            width: 794 // Ancho de captura
-        };
-
-        try {
-            await exportElementAsPNG(element, title, options);
-        } finally {
-            // Restaurar estilos originales
-            element.setAttribute('style', originalStyleAttr);
-        }
+        
+        // Módulo export.js maneja automágicamente el off-screen rendering
+        await exportElementAsPNG(element, title);
     });
 
     // 5. Admin Actions
@@ -237,10 +221,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('btn-save-repertoire-details').addEventListener('click', saveRepertoireDetails);
     document.getElementById('btn-add-song-to-rep').addEventListener('click', openAddSongModal);
     document.getElementById('btn-confirm-add-song').addEventListener('click', addSongToRepertoire);
-    document.getElementById('input-song-section').addEventListener('change', updateSongSelectOptions);
-    document.getElementById('input-song-search').addEventListener('input', updateSongSelectOptions);
-    document.getElementById('select-song-to-add').addEventListener('change', updateRepertoireKeyInput);
-    document.getElementById('btn-bulk-import').addEventListener('click', handleBulkImport);
+    // Listeners del input-search fueron movidos al closure inyectado en runtime del Autocomplete UI
     document.getElementById('btn-select-songs').addEventListener('click', () => toggleSelectionMode(true));
     document.getElementById('btn-cancel-selection').addEventListener('click', () => toggleSelectionMode(false));
     document.getElementById('btn-delete-selected').addEventListener('click', deleteSelectedSongs);
@@ -289,6 +270,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     document.getElementById('btn-process-import').addEventListener('click', processImport);
+
+    // Home Quick Actions
+    document.getElementById('quick-browse-songs')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('nav-songs').click();
+    });
+    
+    document.getElementById('quick-browse-reps')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('nav-repertoires').click();
+    });
+
+    // View All Repertoires Link
+    document.getElementById('view-all-rep')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('nav-repertoires').click();
+    });
 
     // File Import Logic
     document.getElementById('import-file').addEventListener('change', (e) => {
@@ -376,6 +374,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Mantener la base de datos activa en el plan gratuito de Supabase
     setInterval(keepDatabaseAwake, 300000); // Ping cada 5 minutos
+
+    // Mostrar vista de home inicialmente
+    await loadHomeData();
+    showView('view-home');
 });
 
 /**
@@ -413,10 +415,12 @@ async function saveProfile() {
     const newRole = document.getElementById('profile-role').value;
     if (!newName) return showToast('El nombre es requerido', 'warning');
 
+    toggleLoading('btn-save-profile', true);
     const { error } = await supabase
         .from('profiles')
         .update({ nombre: newName, rol: newRole })
         .eq('id', userProfile.id);
+    toggleLoading('btn-save-profile', false);
 
     if (error) {
         showToast('Error al actualizar perfil: ' + error.message, 'danger');
@@ -434,7 +438,9 @@ async function changePassword() {
         return showToast('La contraseña debe tener al menos 6 caracteres.', 'warning');
     }
 
+    toggleLoading('btn-change-password', true);
     const { error } = await supabase.auth.updateUser({ password: newPassword });
+    toggleLoading('btn-change-password', false);
     if (error) {
         showToast('Error al cambiar la contraseña: ' + error.message, 'danger');
     } else {
@@ -443,58 +449,9 @@ async function changePassword() {
     }
 }
 
-async function exportElementAsPNG(element, filename, options = {}) {
-    const elementsToHide = element.querySelectorAll('.no-export');
-    elementsToHide.forEach(el => el.style.display = 'none');
+// Funciones trasladadas a ./modules/ui.js y export.js
 
-    try {
-        const canvas = await html2canvas(element, {
-            backgroundColor: '#ffffff',
-            scale: 2,
-            useCORS: true,
-            ...options,
-        });
-        const link = document.createElement('a');
-        link.download = `${filename}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-    } catch (err) {
-        console.error('Error exportando a PNG:', err);
-        showToast('Hubo un error al exportar la imagen.', 'danger');
-    } finally {
-        elementsToHide.forEach(el => el.style.display = '');
-    }
-}
-
-function showView(viewId, pushToHistory = true) {
-    ['view-home', 'view-songs', 'view-song-detail', 'view-repertoires', 'view-repertoire-detail', 'view-profile'].forEach(id => {
-        document.getElementById(id).classList.add('d-none');
-    });
-    document.getElementById(viewId).classList.remove('d-none');
-    if (pushToHistory) {
-        history.pushState({ viewId }, '', '#' + viewId.replace('view-', ''));
-    }
-}
-
-function closeNavbar() {
-    const navbarOffcanvas = document.getElementById('offcanvasNavbar');
-    if (navbarOffcanvas.classList.contains('show')) {
-        const bsOffcanvas = bootstrap.Offcanvas.getInstance(navbarOffcanvas) || new bootstrap.Offcanvas(navbarOffcanvas);
-        bsOffcanvas.hide();
-    }
-}
-
-function showToast(message, type = 'info') {
-    const toastEl = document.getElementById('liveToast');
-    const toastBody = document.getElementById('toast-body');
-    
-    // Configurar colores según tipo
-    toastEl.className = `toast align-items-center text-white border-0 bg-${type}`;
-    toastBody.textContent = message;
-    
-    const toast = new bootstrap.Toast(toastEl);
-    toast.show();
-}
+// showView, closeNavbar y showToast trasladadas a ui.js
 
 function toggleSelectionMode(enable) {
     isSelectionMode = enable;
@@ -545,11 +502,10 @@ async function loadSongs() {
     const hymnsList = document.getElementById('hymns-list');
     const jubiloList = document.getElementById('jubilo-list');
     const adoracionList = document.getElementById('adoracion-list');
-    document.getElementById('song-list-search').value = ''; // Resetear búsqueda al cargar
+    document.getElementById('song-list-search').value = ''; 
     
-    hymnsList.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm text-secondary" role="status"></div></div>';
-    jubiloList.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm text-secondary" role="status"></div></div>';
-    adoracionList.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm text-secondary" role="status"></div></div>';
+    // Skeleton Loaders Múltiples
+    showSkeletons(['hymns-list', 'jubilo-list', 'adoracion-list']);
 
     const { data: songs, error } = await supabase
         .from('songs')
@@ -568,9 +524,12 @@ async function loadSongs() {
     jubiloList.innerHTML = '';
     adoracionList.innerHTML = '';
 
+    let globalIdx = 0; // Para el animation-delay escalonado
     songs.forEach(song => {
         const item = document.createElement('a');
-        item.className = 'list-group-item list-group-item-action d-flex align-items-center';
+        item.className = 'list-group-item list-group-item-action d-flex align-items-center list-item-animate';
+        // Añadir retraso para escalerilla de hasta 15 elementos, para que no tarde demasiado si hay 100 canciones
+        item.style.animationDelay = `${Math.min(globalIdx * 0.03, 0.45)}s`;
         item.href = '#';
         
         const checkboxHTML = `
@@ -581,20 +540,57 @@ async function loadSongs() {
 
         let titleHTML;
         if (song.tipo === 'himno') {
-            const displayTitle = song.autor ? ` - ${song.autor}` : '';
-            titleHTML = `<span class="fw-bold">#${song.titulo}${displayTitle}</span> <span class="badge bg-secondary float-end">${song.tono_original || '-'}</span>`;
+            const hymnDisplay = song.autor ? `#${song.titulo} - ${song.autor}` : `#${song.titulo}`;
+            titleHTML = `<span class="fw-bold fs-6">${hymnDisplay}</span> <span class="badge bg-secondary float-end mt-1">${song.tono_original || '-'}</span>`;
         } else {
-            titleHTML = `${song.titulo} <span class="badge bg-secondary float-end">${song.tono_original || '-'}</span>`;
+            titleHTML = `<span class="fw-semibold">${song.titulo}</span> <span class="badge bg-secondary float-end mt-1">${song.tono_original || '-'}</span>`;
         }
+        item.innerHTML = checkboxHTML + `<div class="flex-grow-1 text-truncate pe-2">${titleHTML}</div>`;
 
-        item.innerHTML = checkboxHTML + `<div class="flex-grow-1">${titleHTML}</div>`;
-
-        // Preparar texto para búsqueda: Título, Autor y Letra (sin acordes)
         const cleanLyrics = (song.letra_acordes || '').replace(/\[[^\]]*\]/g, ' ').replace(/\s+/g, ' ');
         item.dataset.search = `${song.titulo} ${song.autor || ''} ${cleanLyrics}`.toLowerCase();
 
+        // Lógica de MANTENER PRESIONADO (Long Press) para seleccionar
+        let pressTimer;
+        let isLongPress = false;
+
+        const startPress = (e) => {
+            if (isSelectionMode) return;
+            isLongPress = false;
+            pressTimer = setTimeout(() => {
+                isLongPress = true;
+                if (!isSelectionMode) {
+                    toggleSelectionMode(true);
+                    // Seleccionar automáticamente al mantener presionado
+                    const chk = item.querySelector('input[type="checkbox"]');
+                    if (chk) chk.checked = true;
+                    // Proporcionar retroalimentación vibratoria si el dispositivo lo soporta
+                    if (navigator.vibrate) navigator.vibrate(50);
+                }
+            }, 600); // 600ms = Mantener presionado
+        };
+
+        const cancelPress = () => {
+            if (pressTimer) clearTimeout(pressTimer);
+        };
+
+        // Eventos táctiles y de mouse
+        item.addEventListener('touchstart', startPress, { passive: true });
+        item.addEventListener('touchend', cancelPress);
+        item.addEventListener('touchmove', cancelPress);
+        
+        item.addEventListener('mousedown', startPress);
+        item.addEventListener('mouseup', cancelPress);
+        item.addEventListener('mouseleave', cancelPress);
+
         item.addEventListener('click', (e) => {
             e.preventDefault();
+            // Si el click fue en realidad un "long press", ignoramos el click normal
+            if (isLongPress) {
+                isLongPress = false;
+                return;
+            }
+
             if (isSelectionMode) {
                 const chk = e.currentTarget.querySelector('input[type="checkbox"]');
                 if (chk && e.target.type !== 'checkbox') {
@@ -614,6 +610,7 @@ async function loadSongs() {
         } else {
             jubiloList.appendChild(item);
         }
+        globalIdx++;
     });
     
     // Ordenar himnos numéricamente si es posible
@@ -633,18 +630,15 @@ function sortListNumerically(listContainer) {
 }
 
 function filterSongsList(e) {
-    const term = e.target.value.toLowerCase();
+    const term = e.target.value.toLowerCase().trim();
     const items = document.querySelectorAll('#hymns-list a, #jubilo-list a, #adoracion-list a');
+    
     items.forEach(item => {
-        // Buscar en el dataset preparado (que incluye letra) o fallback al texto visible
         const searchContent = item.dataset.search || item.textContent.toLowerCase();
-        if (searchContent.includes(term)) {
-            item.classList.remove('d-none');
-        } else {
-            item.classList.add('d-none');
-        }
+        item.classList.toggle('d-none', !searchContent.includes(term));
     });
 }
+
 
 function openSong(song, targetKey = null, fromView = 'view-songs') {
     currentSong = song;
@@ -669,11 +663,8 @@ function openSong(song, targetKey = null, fromView = 'view-songs') {
         btnToggleLyrics.classList.add('btn-outline-secondary');
     }
     
-    if (song.tipo === 'himno' && song.autor) {
-        document.getElementById('detail-title').textContent = `#${song.titulo} - ${song.autor}`;
-    } else {
-        document.getElementById('detail-title').textContent = song.titulo;
-    }
+    // Los himnos no muestran autor por requerimiento
+    document.getElementById('detail-title').textContent = (song.tipo === 'himno') ? `#${song.titulo}` : song.titulo;
     
     // YouTube Logic
     const ytContainer = document.getElementById('youtube-container');
@@ -803,51 +794,9 @@ function setTranspositionByTarget(targetRoot, targetSuffix) {
     transposeModal.hide();
 }
 
-function changeFontSize(delta) {
-    currentFontSize = Math.max(10, Math.min(60, currentFontSize + delta));
-    updateFontSize();
-}
-
+// Funciones UI como changeFontSize, autoScroll desactivadas aquí
 function updateFontSize() {
-    document.getElementById('song-lyrics').style.fontSize = `${currentFontSize}px`;
-}
-
-function toggleLyricsOnly() {
-    const container = document.getElementById('song-lyrics');
-    const btn = document.getElementById('btn-toggle-lyrics');
-    container.classList.toggle('lyrics-only');
-    
-    if (container.classList.contains('lyrics-only')) {
-        btn.classList.add('active', 'btn-secondary');
-        btn.classList.remove('btn-outline-secondary');
-    } else {
-        btn.classList.remove('active', 'btn-secondary');
-        btn.classList.add('btn-outline-secondary');
-    }
-}
-
-function toggleAutoScroll() {
-    const btn = document.getElementById('btn-auto-scroll');
-    if (scrollInterval) {
-        stopAutoScroll();
-    } else {
-        btn.textContent = '⏸';
-        btn.classList.replace('btn-outline-success', 'btn-danger');
-        startScrollInterval();
-    }
-}
-
-function startScrollInterval() {
-    if (scrollInterval) clearInterval(scrollInterval);
-    scrollInterval = setInterval(() => window.scrollBy(0, 1), scrollSpeedMs);
-}
-
-function stopAutoScroll() {
-    const btn = document.getElementById('btn-auto-scroll');
-    if (scrollInterval) clearInterval(scrollInterval);
-    scrollInterval = null;
-    btn.innerHTML = '<i class="bi bi-play-fill"></i>';
-    btn.classList.replace('btn-danger', 'btn-outline-success');
+    document.getElementById('song-lyrics').style.fontSize = `${state.currentFontSize || currentFontSize}px`;
 }
 
 function renderCurrentSong() {
@@ -920,6 +869,7 @@ async function saveSong() {
         created_by: userProfile.id
     };
 
+    toggleLoading('btn-save-song', true);
     let error;
     if (id) {
         const { error: updateError } = await supabase.from('songs').update(songData).eq('id', id);
@@ -928,6 +878,7 @@ async function saveSong() {
         const { error: insertError } = await supabase.from('songs').insert([songData]);
         error = insertError;
     }
+    toggleLoading('btn-save-song', false);
 
     if (error) {
         showToast('Error guardando: ' + error.message, 'danger');
@@ -957,7 +908,9 @@ async function saveSong() {
 async function deleteSong() {
     if (!confirm('¿Estás seguro de eliminar esta canción?')) return;
 
+    toggleLoading('btn-delete-song', true);
     const { error } = await supabase.from('songs').delete().eq('id', currentSong.id);
+    toggleLoading('btn-delete-song', false);
     
     if (error) {
         showToast('Error eliminando: ' + error.message, 'danger');
@@ -971,7 +924,7 @@ async function deleteSong() {
 
 async function loadRepertoires() {
     const listContainer = document.getElementById('repertoires-list');
-    listContainer.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm text-secondary" role="status"></div></div>';
+    showCardSkeletons('repertoires-list');
 
     const { data: repertoires, error } = await supabase
         .from('repertoires')
@@ -984,15 +937,22 @@ async function loadRepertoires() {
     }
 
     listContainer.innerHTML = '';
-    repertoires.forEach(rep => {
+    repertoires.forEach((rep, idx) => {
         const col = document.createElement('div');
-        col.className = 'col-md-4';
+        col.className = 'col-md-4 col-sm-6 list-item-animate';
+        col.style.animationDelay = `${Math.min(idx * 0.05, 0.5)}s`;
+        
         col.innerHTML = `
-            <div class="card repertoire-card h-100 shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title">${rep.titulo}</h5>
-                    <h6 class="card-subtitle mb-2 text-muted">${rep.fecha || ''} ${rep.hora || ''}</h6>
-                    <p class="card-text small">Director: ${rep.director || '-'}</p>
+            <div class="card repertoire-card h-100 shadow-sm border-0" style="border-top: 4px solid var(--c-primary) !important;">
+                <div class="card-body p-4">
+                    <h5 class="card-title text-truncate fw-bold mb-1" style="font-size: 1.15rem;">${rep.titulo}</h5>
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <i class="bi bi-calendar-event text-primary"></i>
+                        <h6 class="card-subtitle text-muted fw-semibold m-0" style="font-size: 0.85rem;">${rep.fecha || ''} ${rep.hora ? '• ' + rep.hora.substring(0,5) : ''}</h6>
+                    </div>
+                    <p class="card-text small text-muted text-truncate m-0">
+                        <i class="bi bi-person-fill me-1"></i> Dirige: <strong class="text-dark">${rep.director || '-'}</strong>
+                    </p>
                 </div>
             </div>
         `;
@@ -1048,18 +1008,75 @@ async function openRepertoire(rep) {
     document.getElementById('edit-rep-drums').value = rep.bateria || '';
     document.getElementById('edit-rep-bass').value = rep.bajo || '';
 
-    // Cargar Tema Guardado (o usar defecto)
+    // Cargar Tema Guardado (Fidelidad 1:1)
     const savedTheme = rep.tema || 'theme-morning';
     document.getElementById('rep-theme-select').value = savedTheme;
-    document.getElementById('repertoire-content').className = `${savedTheme} p-4 mx-auto shadow-lg`;
+    // Eliminamos 'shadow-lg' y 'p-4' para seguir el diseño plano de la imagen
+    document.getElementById('repertoire-content').className = `${savedTheme} mx-auto`;
 
     await loadRepertoireSongs(rep.id);
     showView('view-repertoire-detail');
 }
 
+async function loadHomeData() {
+    // Cargar estadísticas y repertorios recientes
+    const { data: songs, error: songsError } = await supabase
+        .from('songs')
+        .select('tipo', { count: 'exact' })
+        .in('tipo', ['jubilo', 'adoracion']);
+
+    const { data: repertoires, error: repsError } = await supabase
+        .from('repertoires')
+        .select('*')
+        .order('fecha', { ascending: false })
+        .limit(5);
+
+    // Actualizar contadores
+    if (!songsError && songs) {
+        document.getElementById('stat-songs-count').textContent = songs.length;
+    }
+    
+    if (!repsError && repertoires) {
+        document.getElementById('stat-repertoires-count').textContent = repertoires.length;
+        
+        // Renderizar repertorios recientes
+        const container = document.getElementById('recent-repertoires');
+        if (repertoires.length === 0) {
+            container.innerHTML = '<p class="text-muted text-center py-4">No hay repertorios aún</p>';
+        } else {
+            container.innerHTML = repertoires.map(rep => `
+                <div class="recent-rep-item" data-rep-id="${rep.id}">
+                    <div class="rep-item-info">
+                        <div class="rep-item-title">${rep.titulo}</div>
+                        <div class="rep-item-meta">
+                            <span class="rep-item-date">
+                                <i class="bi bi-calendar" style="font-size:0.85rem;"></i>
+                                ${rep.fecha || '-'}
+                            </span>
+                            ${rep.hora ? `<span>${rep.hora.substring(0, 5)}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="rep-item-arrow">
+                        <i class="bi bi-chevron-right"></i>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Agregar listeners a los items de repertorios recientes
+            container.querySelectorAll('.recent-rep-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const repId = item.dataset.repId;
+                    const rep = repertoires.find(r => r.id === repId);
+                    if (rep) openRepertoire(rep);
+                });
+            });
+        }
+    }
+}
+
 async function loadRepertoireSongs(repId) {
     const list = document.getElementById('rep-songs-list');
-    list.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm text-secondary" role="status"></div></div>';
+    list.innerHTML = '<div class="text-center py-4 fade-in"><div class="modern-loader modern-loader-sm"></div></div>';
 
     const { data, error } = await supabase
         .from('repertoire_songs')
@@ -1074,7 +1091,6 @@ async function loadRepertoireSongs(repId) {
     }
 
     list.innerHTML = '';
-    
     // Agrupar por sección
     const sections = {};
     data.forEach((item) => {
@@ -1092,7 +1108,6 @@ async function loadRepertoireSongs(repId) {
         'ALABANZAS DE ADORACION',
         'OFRENDA'
     ];
-    
     const sortedKeys = Object.keys(sections).sort((a, b) => {
         const idxA = sectionOrder.indexOf(a);
         const idxB = sectionOrder.indexOf(b);
@@ -1114,35 +1129,32 @@ async function loadRepertoireSongs(repId) {
         // Canciones en la sección
         sections[sectionName].forEach((item, idx) => {
             const li = document.createElement('li');
-            li.className = 'd-flex justify-content-between align-items-center rep-song-item';
-            
-            // ID para Drag & Drop
+            const zebraClass = (songIndex % 2 === 0) ? 'rep-song-even' : '';
+            li.className = `rep-song-item ${zebraClass}`;
             li.dataset.id = item.id;
-            
             if (userProfile.rol === 'admin') {
                 li.draggable = true;
                 addDragEvents(li);
             }
-
-            const songText = document.createElement('div');
-            songText.style.flex = '1';
-
+            // Unificado: Título y autor en línea, autor a la derecha si existe
+            const toneToDisplay = item.tono || item.songs.tono_original || '-';
             let displayTitle = item.songs.titulo;
+            let displayAuthor = item.songs.autor || '';
             if (item.songs.tipo === 'himno') {
+                // Para himnos: mostrar #Número - Título del Himno
                 displayTitle = `#${item.songs.titulo}`;
-                if (item.songs.autor) {
-                    displayTitle += ` - ${item.songs.autor}`;
+                displayAuthor = item.songs.autor || '';
+                if (displayAuthor) {
+                    displayTitle = `${displayTitle} - ${displayAuthor}`;
+                    displayAuthor = ''; // No mostrar el autor separado
                 }
             }
-
-            const authorHtml = (item.songs.autor && item.songs.tipo !== 'himno') ? `<small class="text-muted fw-normal ms-2" style="font-size: 0.5em; vertical-align: middle; letter-spacing: 0;">${item.songs.autor}</small>` : '';
-
-            // Mostrar el tono guardado para el repertorio, o el original si no hay específico
-            const toneToDisplay = item.tono || item.songs.tono_original || '-';
-            songText.innerHTML = `<span class="rep-song-index">•</span><span class="rep-song-title">${displayTitle}${authorHtml}</span> <span class="badge bg-white text-dark border border-dark ms-2 rep-key-badge" style="vertical-align: middle; border-color: currentColor !important;">${toneToDisplay}</span>`;
-            
-            li.appendChild(songText);
-            
+            li.innerHTML = `
+                <span class="rep-song-index">•</span>
+                <span class="rep-song-title">${displayTitle}</span>
+                ${displayAuthor ? `<span class="rep-song-author ms-2">${displayAuthor}</span>` : ''}
+                <span class="badge rep-key-badge ms-auto">${toneToDisplay}</span>
+            `;
             if (userProfile.rol === 'admin') {
                 const keyBadge = li.querySelector('.rep-key-badge');
                 keyBadge.style.cursor = 'pointer';
@@ -1151,7 +1163,6 @@ async function loadRepertoireSongs(repId) {
                     e.stopPropagation();
                     editRepertoireSongKey(item);
                 });
-
                 const btn = document.createElement('button');
                 btn.className = 'btn btn-sm btn-outline-danger no-export';
                 btn.style.marginLeft = '0.5rem';
@@ -1162,11 +1173,8 @@ async function loadRepertoireSongs(repId) {
                 };
                 li.appendChild(btn);
             }
-            
-            // Click para ver la canción
             li.style.cursor = 'pointer';
             li.onclick = () => openSong(item.songs, item.tono || item.songs.tono_original, 'view-repertoire-detail');
-
             list.appendChild(li);
             songIndex++;
         });
@@ -1289,12 +1297,14 @@ async function saveRepertoireDetails() {
         bajo: document.getElementById('edit-rep-bass').value,
     };
 
+    toggleLoading('btn-save-repertoire-details', true);
     const { data, error } = await supabase
         .from('repertoires')
         .update(updatedData)
         .eq('id', currentRepertoire.id)
         .select()
         .single();
+    toggleLoading('btn-save-repertoire-details', false);
 
     if (error) {
         showToast('Error al guardar los cambios: ' + error.message, 'danger');
@@ -1348,7 +1358,9 @@ async function saveRepertoire() {
         created_by: userProfile.id
     };
 
+    toggleLoading('btn-save-repertoire', true);
     const { error } = await supabase.from('repertoires').insert([data]);
+    toggleLoading('btn-save-repertoire', false);
     if (error) {
         showToast('Error guardando: ' + error.message, 'danger');
     } else {
@@ -1366,26 +1378,20 @@ async function deleteRepertoire() {
 }
 
 async function openAddSongModal() {
-    const select = document.getElementById('select-song-to-add');
-    select.innerHTML = '<option>Cargando...</option>';
-    document.getElementById('input-song-search').value = '';
-    document.getElementById('input-song-key-repertoire').value = '';
+    resetAutocomplete();
     
     // Cargamos id, titulo, tipo, autor y tono_original
     const { data: songs } = await supabase.from('songs').select('id, titulo, tipo, autor, tono_original').order('titulo');
     allSongsForModal = songs || [];
     
-    // Aplicar filtro inicial basado en la sección seleccionada por defecto
-    updateSongSelectOptions();
-    
+    populateSongSelect();
     addSongModal.show();
 }
 
-function updateSongSelectOptions() {
+function populateSongSelect() {
     const section = document.getElementById('input-song-section').value;
-    const searchQuery = document.getElementById('input-song-search').value.toLowerCase();
-    const select = document.getElementById('select-song-to-add');
-    select.innerHTML = '';
+    const select = document.getElementById('input-song-select');
+    select.innerHTML = '<option value="">-- Selecciona una canción --</option>';
     
     let filteredSongs = [];
     if (section === 'HIMNOS DE GLORIA Y TRIUNFO') {
@@ -1395,71 +1401,155 @@ function updateSongSelectOptions() {
     } else if (section === 'ALABANZAS DE ADORACION') {
         filteredSongs = allSongsForModal.filter(s => s.tipo === 'adoracion');
     } else if (section === 'OFRENDA') {
-        // Jubilo sirve para ofrenda
         filteredSongs = allSongsForModal.filter(s => s.tipo === 'jubilo' || s.tipo === 'ofrenda');
     } else {
         filteredSongs = allSongsForModal;
     }
+    
+    filteredSongs.sort((a, b) => a.titulo.localeCompare(b.titulo));
+    
+    filteredSongs.forEach(song => {
+        const option = document.createElement('option');
+        option.value = song.id;
+        if (song.tipo === 'himno' && song.autor) {
+            option.textContent = `#${song.titulo} - ${song.autor}`;
+        } else {
+            option.textContent = song.titulo;
+        }
+        select.appendChild(option);
+    });
+}
 
-    // Filtrar por búsqueda de texto (título, número o autor)
-    if (searchQuery) {
-        filteredSongs = filteredSongs.filter(s => {
-            const titleMatch = s.titulo.toLowerCase().includes(searchQuery);
-            const authorMatch = s.autor && s.autor.toLowerCase().includes(searchQuery);
-            // Para himnos, el título suele ser el número
-            return titleMatch || authorMatch;
-        });
+function renderAutocompleteResults() {
+    const section = document.getElementById('input-song-section').value;
+    const term = document.getElementById('input-song-search-autoc').value.toLowerCase().trim();
+    const dropdown = document.getElementById('autocomplete-dropdown');
+    
+    if (!term) {
+        dropdown.classList.add('d-none');
+        return;
     }
+    
+    let filteredSongs = [];
+    if (section === 'HIMNOS DE GLORIA Y TRIUNFO') {
+        filteredSongs = allSongsForModal.filter(s => s.tipo === 'himno');
+    } else if (section === 'ALABANZAS DE JUBILO') {
+        filteredSongs = allSongsForModal.filter(s => s.tipo === 'jubilo');
+    } else if (section === 'ALABANZAS DE ADORACION') {
+        filteredSongs = allSongsForModal.filter(s => s.tipo === 'adoracion');
+    } else if (section === 'OFRENDA') {
+        filteredSongs = allSongsForModal.filter(s => s.tipo === 'jubilo' || s.tipo === 'ofrenda');
+    } else {
+        filteredSongs = allSongsForModal;
+    }
+    
+    filteredSongs = filteredSongs.filter(s => {
+        const titleMatch = s.titulo.toLowerCase().includes(term);
+        const authorMatch = s.autor && s.autor.toLowerCase().includes(term);
+        return titleMatch || authorMatch;
+    }).slice(0, 8); // Mostrar máximo 8 resultados rápidos
+    
+    dropdown.innerHTML = '';
     
     if (filteredSongs.length === 0) {
-        const opt = document.createElement('option');
-        opt.textContent = '-- No hay canciones disponibles --';
-        select.appendChild(opt);
+        dropdown.innerHTML = '<div class="list-group-item text-muted">No se encontraron canciones</div>';
     } else {
         filteredSongs.forEach(s => {
-            const opt = document.createElement('option');
-            opt.value = s.id;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'list-group-item list-group-item-action text-start';
             if (s.tipo === 'himno' && s.autor) {
-                opt.textContent = `#${s.titulo} - ${s.autor}`;
+                btn.innerHTML = `<span class="fw-bold text-primary">#${s.titulo}</span> - <span class="text-dark">${s.autor}</span>`;
             } else {
-                opt.textContent = s.titulo;
+                btn.textContent = s.titulo;
             }
-            select.appendChild(opt);
+            // Al hacer clic
+            btn.addEventListener('mousedown', () => selectSongFromAutocomplete(s));
+            dropdown.appendChild(btn);
         });
     }
-    // Actualizar el input de tono con la primera opción seleccionada por defecto
-    updateRepertoireKeyInput();
+    dropdown.classList.remove('d-none');
 }
 
-function updateRepertoireKeyInput() {
-    const select = document.getElementById('select-song-to-add');
-    const songId = select.value;
-    const song = allSongsForModal.find(s => s.id == songId);
+function selectSongFromAutocomplete(song) {
+    document.getElementById('hidden-selected-song-id').value = song.id;
     
-    if (song) {
-        document.getElementById('input-song-key-repertoire').value = song.tono_original || '';
-    } else {
-        document.getElementById('input-song-key-repertoire').value = '';
-    }
+    let displayName = song.tipo === 'himno' && song.autor ? `#${song.titulo} - ${song.autor}` : song.titulo;
+    document.getElementById('selected-song-name-display').textContent = displayName;
+    document.getElementById('input-song-key-repertoire').value = song.tono_original || '';
+    
+    // Ocultar buscador y mostrar confirmación
+    document.getElementById('input-song-search-autoc').parentElement.classList.add('d-none');
+    document.getElementById('autocomplete-dropdown').classList.add('d-none');
+    document.getElementById('selected-song-view').classList.remove('d-none');
+    document.getElementById('btn-confirm-add-song').disabled = false;
 }
+
+window.resetAutocomplete = function() {
+    document.getElementById('hidden-selected-song-id').value = '';
+    document.getElementById('input-song-search-autoc').value = '';
+    document.getElementById('input-song-select').value = '';
+    document.getElementById('input-song-key-repertoire').value = '';
+    
+    document.getElementById('input-song-search-autoc').parentElement.classList.remove('d-none');
+    document.getElementById('autocomplete-dropdown').classList.add('d-none');
+    document.getElementById('selected-song-view').classList.add('d-none');
+    document.getElementById('btn-confirm-add-song').disabled = true;
+};
+
+// Listeners inyectados en runtime para Autocomplete y Select
+document.addEventListener('DOMContentLoaded', () => {
+    const inputAutoc = document.getElementById('input-song-search-autoc');
+    if(inputAutoc) {
+        inputAutoc.addEventListener('input', renderAutocompleteResults);
+        inputAutoc.addEventListener('focus', renderAutocompleteResults);
+        inputAutoc.addEventListener('blur', () => {
+            setTimeout(() => document.getElementById('autocomplete-dropdown').classList.add('d-none'), 200);
+        });
+    }
+    
+    // Listener para el select de canciones
+    const songSelect = document.getElementById('input-song-select');
+    if(songSelect) {
+        songSelect.addEventListener('change', function() {
+            if (this.value) {
+                const selectedSong = allSongsForModal.find(s => s.id === this.value);
+                if (selectedSong) {
+                    selectSongFromAutocomplete(selectedSong);
+                }
+            }
+        });
+    }
+    
+    // Actualizar select cuando cambia la sección
+    const sectionSelect = document.getElementById('input-song-section');
+    if(sectionSelect) {
+        sectionSelect.addEventListener('change', () => {
+            populateSongSelect();
+            renderAutocompleteResults();
+        });
+    }
+});
 
 async function addSongToRepertoire() {
-    const songId = document.getElementById('select-song-to-add').value;
+    const songId = document.getElementById('hidden-selected-song-id').value;
     if (!songId) {
-        showToast('Por favor selecciona una canción', 'warning');
+        showToast('Por favor selecciona una canción del buscador', 'warning');
         return;
     }
 
     const section = document.getElementById('input-song-section').value.trim();
     const tono = document.getElementById('input-song-key-repertoire').value.trim();
 
+    toggleLoading('btn-confirm-add-song', true);
     const { error } = await supabase.from('repertoire_songs').insert([{
         repertoire_id: currentRepertoire.id,
         song_id: songId,
         orden: document.getElementById('rep-songs-list').querySelectorAll('li').length + 1,
         section: section || null,
-        tono: tono || null // Guardamos el tono específico para este repertorio
+        tono: tono || null
     }]);
+    toggleLoading('btn-confirm-add-song', false);
     
     if (error) {
         showToast('Error al agregar la canción: ' + error.message, 'danger');

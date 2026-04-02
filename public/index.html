@@ -3,756 +3,820 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#343a40"/>
+    <meta name="theme-color" content="#ffffff" id="meta-theme-color">
+    <meta name="description" content="Sistema de gestión de canciones y repertorios para la iglesia Adoradores Del Rey.">
     <link rel="icon" href="logoADR.jpeg" type="image/x-icon">
-    <link rel="manifest" href="/manifest.json">
-
-    <!-- iOS support -->
-    <link rel="apple-touch-icon" href="/images/icon-192x192.png">
-    <meta name="apple-mobile-web-app-status-bar" content="#343a40">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="logoADR.jpeg">
+    <meta name="apple-mobile-web-app-status-bar" content="default">
+    <meta name="mobile-web-app-capable" content="yes">
 
     <title>Adoradores Del Rey</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
-    <link rel="stylesheet" href="src/styles/main.css">
+
+    <!-- Bootstrap Icons (iconos únicamente, muy liviano) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- Diseño propio sin Bootstrap CSS -->
+    <link rel="stylesheet" href="src/styles/main.css">
     <link rel="stylesheet" href="src/styles/mobile.css">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Roboto', sans-serif; }
-        h1, h2, h3, h4, h5, h6, .text-uppercase, .fw-bold { font-family: 'Montserrat', sans-serif; }
 
-        /* Estilos Responsivos para Repertorio */
-        .rep-header-title { font-size: 3.5rem; letter-spacing: -2px; }
-        .rep-meta-label { font-size: 0.9em; letter-spacing: 2px; }
-        .rep-meta-value { font-size: 1.8em; }
-        .rep-uniform-box { font-size: 1.6em; letter-spacing: 1px; border: 2px solid currentColor; padding: 0.5rem 2rem; border-radius: 50px; }
-
-        .rep-musician-section { font-size: 1.4em; }
-        .rep-musician-title { letter-spacing: 1px; border-bottom: 2px solid currentColor; display: inline-block; }
-        .rep-col-divider { border-right: 2px solid currentColor; }
-
-        .rep-section-header { font-weight: 800; font-size: 1.6em; margin-top: 1rem; margin-bottom: 0.2rem; text-transform: uppercase; border-bottom: 2px solid currentColor; padding-bottom: 0.1rem; letter-spacing: 1px; }
-        .rep-song-item { padding: 0.2rem 0.4rem; margin-bottom: 0.2rem; border-bottom: 1px solid rgba(0,0,0,0.08); cursor: pointer; transition: background-color 0.2s; }
-        .rep-song-index { font-weight: 900; font-size: 1.4em; margin-right: 1rem; }
-        .rep-song-title { font-weight: 800; font-size: 1.8em; line-height: 1.2; }
-
-        /* Temas */
-        /* Mañana: Degradado muy claro, texto oscuro */
-        .theme-morning { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); color: #1a1a1a; }
-        .theme-morning .rep-song-item:hover { background-color: rgba(255,255,255,0.5); }
-        .theme-morning .badge { background-color: #fff !important; color: #333 !important; border: 1px solid #999 !important; }
-
-        /* Noche: Negro predominante, texto claro */
-        .theme-night { background: linear-gradient(to bottom, #000000 0%, #1c1c1c 60%, #2c3e50 100%); color: #e0e0e0; }
-        .theme-night .rep-song-item { border-bottom-color: rgba(255,255,255,0.15); }
-        .theme-night .rep-song-item:hover { background-color: rgba(255,255,255,0.1); }
-        .theme-night .text-muted { color: #adb5bd !important; }
-        .theme-night .badge { background-color: #333 !important; color: #fff !important; border: 1px solid #555 !important; }
-        .theme-night .rep-section-header { border-bottom-color: #555; }
-
-        /* Especial: Creativo (Morado/Azul elegante) */
-        .theme-special { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; }
-        .theme-special .rep-song-item { border-bottom-color: rgba(255,255,255,0.2); }
-        .theme-special .rep-song-item:hover { background-color: rgba(255,255,255,0.15); }
-        .theme-special .text-muted { color: #e0e0e0 !important; opacity: 0.8; }
-        .theme-special .badge { background-color: rgba(255,255,255,0.25) !important; color: #fff !important; border: 1px solid rgba(255,255,255,0.4) !important; }
-        .theme-special .rep-section-header { border-bottom-color: rgba(255,255,255,0.3); }
-
-        /* Ajustes para Móviles (Pantallas pequeñas) */
-        @media (max-width: 767px) {
-            .rep-header-title { font-size: 2rem; }
-            .rep-meta-value { font-size: 1.2em; }
-            .rep-uniform-box { font-size: 1rem; padding: 0.3rem 1rem; }
-            .rep-musician-section { font-size: 1rem; }
-            .rep-col-divider { border-right: none; border-bottom: 1px solid #ccc; padding-bottom: 1rem; margin-bottom: 1rem; }
-            
-            .rep-section-header { font-size: 1.2em; border-bottom-width: 2px; margin-top: 1rem; }
-            .rep-song-index { font-size: 1.1em; }
-            .rep-song-title { font-size: 1.2em; }
-        }
-        
-        /* Estilo para la tonalidad en el repertorio (Más grande y visible) */
-        .rep-key-badge {
-            font-size: 1.3em !important;
-            font-weight: 800;
-            padding: 0.35em 0.6em;
-            border-width: 2px !important;
-        }
-
-        /* Estilos CifraClub / Mobile Friendly */
-        .chord {
-            color: #ff5500; /* Naranja CifraClub */
-            font-weight: bold;
-            font-size: 1em; /* Tamaño ajustado para mejor flujo y legibilidad */
-            line-height: 1.2;
-            min-height: 1.4em; /* Reserva espacio vertical */
-        }
-        .section-header {
-            font-weight: 800;
-            color: #555;
-            background: #e9ecef;
-            padding: 4px 10px;
-            border-radius: 15px;
-            display: inline-block;
-            margin: 15px 0 5px 0;
-            font-size: 0.85em;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .chord-word {
-            display: inline-flex;
-            flex-direction: column;
-            vertical-align: bottom;
-            margin-right: 0.3em; /* Mejor separación entre bloques */
-        }
-        .chord-word .lyrics {
-            white-space: pre-wrap; /* Respeta espacios y permite wrap */
-            line-height: 1.15; /* Líneas de letra más pegadas */
-            font-size: 1.1em;
-        }
-        .line-wrapper {
-            line-height: 1; /* Altura ajustada al contenido */
-            margin-bottom: 0.5em; /* Menos separación entre versos */
-            display: block;
-        }
-        .lyrics-container {
-            font-family: 'Courier New', Courier, monospace !important; /* Fuente monoespaciada estricta para respetar espacios del TXT */
-            /* line-height controlado por line-wrapper */
-            white-space: pre; /* Mantiene cada verso en una línea */
-            overflow-x: auto; /* Permite scroll horizontal si la línea es larga */
-            padding: 8px !important; /* Maximizar espacio en móvil */
-            min-height: 300px;
-        }
-        
-        /* Modo Solo Letra */
-        .lyrics-only .chord {
-            display: none !important;
-        }
-        .lyrics-only .chord-word {
-            display: inline; /* Evita huecos extraños cuando se ocultan los acordes */
-        }
-        
-        .song-tools-bar {
-            position: sticky;
-            top: 0;
-            background: rgba(255, 255, 255, 0.98);
-            z-index: 1000;
-            border-bottom: 1px solid #dee2e6;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        
-        /* Estilos para menú lateral (Offcanvas) en móvil y Navbar en escritorio */
-        @media (min-width: 992px) {
-            .navbar-expand-lg .offcanvas {
-                position: static;
-                z-index: auto;
-                flex-grow: 1;
-                width: auto !important;
-                height: auto !important;
-                visibility: visible !important;
-                background-color: transparent !important;
-                border: 0 !important;
-                transform: none !important;
-                transition: none;
-                display: flex !important;
-                flex-direction: row;
-                align-items: center;
+    <!-- Aplica tema guardado antes del paint para evitar flash -->
+    <script>
+        (function(){
+            const t = localStorage.getItem('adr-theme');
+            if (t === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                const mc = document.getElementById('meta-theme-color');
+                if (mc) mc.content = '#100f0e';
             }
-            .navbar-expand-lg .offcanvas .offcanvas-header {
-                display: none;
-            }
-            .navbar-expand-lg .offcanvas .offcanvas-body {
-                display: flex;
-                flex-grow: 1;
-                padding: 0;
-                overflow-y: visible;
-                justify-content: flex-end;
-            }
-        }
-        
-        @media (max-width: 991.98px) {
-            .offcanvas-end {
-                width: 75%;
-                max-width: 300px;
-                background-color: #212529; /* Fondo oscuro para móvil */
-            }
-        }
-
-        /* Estilos para modo de selección de canciones */
-        #view-songs.selection-mode .song-selection-checkbox {
-            display: inline-block !important; /* Usar inline-block para que no ocupe toda la línea */
-        }
-
-        /* Layout en 2 columnas para canciones (Tablets y Desktop) */
-        @media (min-width: 768px) {
-            .song-list-grid {
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 0.5rem;
-            }
-            .song-list-grid .list-group-item {
-                border-radius: 4px !important;
-            }
-        }
-
-        /* Animaciones de Transición entre Vistas */
-        .view-section {
-            animation: fadeInSlide 0.3s ease-out;
-        }
-        @keyframes fadeInSlide {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Personalización de Tabs */
-        .nav-tabs .nav-link.active {
-            background-color: #0d6efd !important;
-            color: white !important;
-            border-color: #0d6efd !important;
-        }
-        .nav-tabs .nav-link:hover {
-            color: #0a58ca;
-            background-color: rgba(13, 110, 253, 0.1);
-        }
-    </style>
+        })();
+    </script>
 </head>
-<body class="d-flex flex-column min-vh-100">
-    <div id="app">
-        <header>
-            <nav class="navbar navbar-expand-lg navbar-dark custom-navbar py-1">
-                <div class="container-fluid">
-                    <a class="navbar-brand fs-6" href="#">Adoradores Del Rey</a>
-                    <button class="navbar-toggler btn-sm border-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-                        <span class="navbar-toggler-icon" style="width: 1em; height: 1em;"></span>
+<body>
+<div id="app">
+    <!-- ═══════════════════════════════════════════
+         HEADER — Barra de navegación tipo app tabs
+         ═══════════════════════════════════════════ -->
+    <header class="glass-effect">
+        <nav class="app-nav">
+            <a href="#" class="nav-brand">Adoradores Del Rey</a>
+            <div class="nav-spacer"></div>
+            <ul class="nav-items">
+                <li>
+                    <a href="#" class="nav-item-link active" id="nav-home">
+                        <i class="bi bi-house-fill"></i>
+                        <span>Inicio</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="nav-item-link" id="nav-songs">
+                        <i class="bi bi-music-note-list"></i>
+                        <span>Canciones</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="nav-item-link" id="nav-repertoires">
+                        <i class="bi bi-journal-text"></i>
+                        <span>Repertorios</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="nav-item-link" id="nav-profile">
+                        <i class="bi bi-person-circle"></i>
+                        <span>Perfil</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- ═══════════════════════════════
+         MAIN CONTENT
+         ═══════════════════════════════ -->
+    <main class="container mt-4">
+
+        <!-- VISTA: Inicio — Dashboard Moderno -->
+        <div id="view-home" class="view-section d-none">
+            <!-- Hero/Welcome Section -->
+            <div class="home-hero mb-4 pb-3">
+                <div class="hero-welcome">
+                    <h1 class="text-uppercase fw-black mb-2" style="font-size:2rem; letter-spacing:-0.5px; color: var(--c-primary);">Adoradores Del Rey</h1>
+                    <p class="text-secondary mb-0" style="font-size:0.95rem;">Bienvenido, <span id="user-name" class="fw-bold text-primary">Músico</span></p>
+                </div>
+            </div>
+
+            <!-- Quick Stats Grid -->
+            <div class="home-grid mb-4">
+                <div class="stat-card" id="stat-songs" style="flex-direction: column; align-items: center; text-align: center; border: none; box-shadow: 0 1px 4px rgba(0,0,0,0.08); gap: 0.2rem !important; padding: 0.75rem !important;">
+                    <div class="stat-icon" style="width: auto; height: auto; background: transparent; font-size: 1.2rem; margin: 0;"><i class="bi bi-music-note-list text-primary"></i></div>
+                    <div class="stat-number" id="stat-songs-count" style="font-size: 1rem; font-weight: 700; color: var(--c-primary); margin: 0;">0</div>
+                    <div class="stat-label small text-muted" style="font-size: 0.65rem; line-height: 1; margin: 0;">Canciones</div>
+                </div>
+                <div class="stat-card" id="stat-repertoires" style="flex-direction: column; align-items: center; text-align: center; border: none; box-shadow: 0 1px 4px rgba(0,0,0,0.08); gap: 0.2rem !important; padding: 0.75rem !important;">
+                    <div class="stat-icon" style="width: auto; height: auto; background: transparent; font-size: 1.2rem; margin: 0;"><i class="bi bi-journal-text text-primary"></i></div>
+                    <div class="stat-number" id="stat-repertoires-count" style="font-size: 1rem; font-weight: 700; color: var(--c-primary); margin: 0;">0</div>
+                    <div class="stat-label small text-muted" style="font-size: 0.65rem; line-height: 1; margin: 0;">Repertorios</div>
+                </div>
+            </div>
+
+            <!-- Recent Repertoires -->
+            <div class="home-section mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3" style="border-bottom: 2px solid var(--c-border); padding-bottom: 0.5rem;">
+                    <h3 class="mb-0" style="font-size: 1.1rem; font-weight: 700;">Repertorios Recientes</h3>
+                    <a href="#" class="text-primary small fw-bold" id="view-all-rep" style="text-decoration:none;">Ver todos →</a>
+                </div>
+                <div class="recent-reps-list" id="recent-repertoires">
+                    <!-- Cargado por JS -->
+                </div>
+            </div>
+
+            <!-- Quick Access Actions -->
+            <div class="home-actions d-grid gap-2 mb-4">
+                <a href="#" id="quick-browse-songs" class="btn btn-primary d-flex align-items-center justify-content-center gap-2" style="text-decoration:none; padding: 0.75rem 1.25rem;">
+                    <i class="bi bi-search"></i> <span>Buscar Canción</span>
+                </a>
+                <a href="#" id="quick-browse-reps" class="btn btn-outline-primary d-flex align-items-center justify-content-center gap-2" style="text-decoration:none; padding: 0.75rem 1.25rem;">
+                    <i class="bi bi-bookmark"></i> <span>Mis Repertorios</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- VISTA: Lista de Canciones -->
+        <div id="view-songs" class="view-section d-none">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="mb-0">Canciones</h2>
+                <div class="btn-group btn-group-sm" id="songs-main-actions">
+                    <button id="btn-select-songs" class="btn btn-outline-secondary d-none admin-only">
+                        <i class="bi bi-check2-square"></i>
                     </button>
-                    
-                    <div class="offcanvas offcanvas-end text-white" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
-                        <div class="offcanvas-header border-bottom border-secondary">
-                            <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menú</h5>
-                            <button type="button" class="btn-close btn-close-white text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-                        </div>
-                        <div class="offcanvas-body">
-                            <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-                            <li class="nav-item">
-                                <a class="nav-link active" href="#" id="nav-home">Inicio</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="#" id="nav-songs">Canciones</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="#" id="nav-repertoires">Repertorios</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="#" id="nav-profile">Mi Perfil</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="#" id="logout-btn">Salir</a>
-                            </li>
-                        </ul>
-                        </div>
-                    </div>
+                    <button id="btn-add-song" class="btn btn-primary d-none admin-only">
+                        <i class="bi bi-plus-lg"></i> Nueva
+                    </button>
                 </div>
-            </nav>
-        </header>
-
-        <main class="container mt-4">
-            <!-- Vista Inicio -->
-            <div id="view-home" class="view-section p-5 mb-4 bg-white rounded-3 shadow-sm text-center hero-section">
-                <div class="container-fluid py-5 fade-in">
-                    <h1 class="display-4 fw-bold text-primary mb-3">Adoradores Del Rey</h1>
-                    <p class="fs-4 text-muted">Bienvenido, <span id="user-name" class="fw-bold text-dark">Músico</span>. Gestiona tus repertorios y alabanzas con excelencia.</p>
+                <div class="btn-group btn-group-sm d-none" id="songs-selection-actions">
+                    <button id="btn-delete-selected" class="btn btn-danger">Eliminar Seleccionados</button>
+                    <button id="btn-cancel-selection" class="btn btn-secondary">Cancelar</button>
                 </div>
             </div>
 
-            <!-- Vista Lista de Canciones -->
-            <div id="view-songs" class="view-section d-none">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2 class="h4 mb-0">Canciones</h2>
-                    <div class="btn-group btn-group-sm" id="songs-main-actions">
-                        <button id="btn-bulk-import" class="btn btn-outline-danger d-none admin-only"><i class="bi bi-cloud-upload"></i> Himnario</button>
-                        <button id="btn-select-songs" class="btn btn-outline-secondary d-none admin-only"><i class="bi bi-check2-square"></i></button>
-                        <button id="btn-add-song" class="btn btn-primary d-none admin-only"><i class="bi bi-plus-lg"></i> Nueva</button>
-                    </div>
-                    <div class="btn-group btn-group-sm d-none" id="songs-selection-actions">
-                        <button id="btn-delete-selected" class="btn btn-danger">Eliminar Seleccionados</button>
-                        <button id="btn-cancel-selection" class="btn btn-secondary">Cancelar</button>
-                    </div>
-                </div>
-                
-                <div class="mb-3">
-                    <input type="text" id="song-list-search" class="form-control form-control-sm" placeholder="🔍 Buscar por título, número o letra...">
-                </div>
-                
-                <ul class="nav nav-tabs mb-3" id="songsTab" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="hymns-tab" data-bs-toggle="tab" data-bs-target="#hymns-content" type="button" role="tab">Himnos</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="jubilo-tab" data-bs-toggle="tab" data-bs-target="#jubilo-content" type="button" role="tab">Júbilo</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="adoracion-tab" data-bs-toggle="tab" data-bs-target="#adoracion-content" type="button" role="tab">Adoración</button>
-                    </li>
-                </ul>
-                <div class="tab-content" id="songsTabContent">
-                    <div class="tab-pane fade show active" id="hymns-content" role="tabpanel"><div class="list-group song-list-grid" id="hymns-list"></div></div>
-                    <div class="tab-pane fade" id="jubilo-content" role="tabpanel"><div class="list-group song-list-grid" id="jubilo-list"></div></div>
-                    <div class="tab-pane fade" id="adoracion-content" role="tabpanel"><div class="list-group song-list-grid" id="adoracion-list"></div></div>
-                </div>
+            <div class="mb-3">
+                <input type="text" id="song-list-search" class="form-control" placeholder="🔍 Buscar por título, número o letra...">
             </div>
 
-            <!-- Vista Detalle Canción -->
-            <div id="view-song-detail" class="view-section d-none">
-                <!-- Barra de Herramientas Estilo App -->
-                <div class="song-tools-bar p-1 mb-2 d-flex gap-1 justify-content-between align-items-center no-export rounded shadow-sm">
-                    <button class="btn btn-outline-secondary btn-sm border-0" id="back-to-songs" style="font-size: 1.2rem;"><i class="bi bi-arrow-left"></i></button>
-                    
-                    <div class="d-flex gap-1 align-items-center">
-                        <button class="btn btn-outline-primary btn-sm fw-bold" id="btn-transpose-menu" style="min-width: 2.5rem;"><i class="bi bi-music-note"></i></button>
-                        <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-dark px-2" id="btn-font-minus" title="Reducir letra"><i class="bi bi-dash-lg"></i></button>
-                            <button class="btn btn-outline-dark px-2" id="btn-font-plus" title="Aumentar letra"><i class="bi bi-plus-lg"></i></button>
-                        </div>
-                    </div>
+            <ul class="nav nav-tabs mb-3" id="songsTab" role="tablist">
+                <li role="presentation">
+                    <button class="nav-link active" id="hymns-tab" data-bs-toggle="tab" data-bs-target="#hymns-content" type="button" role="tab">Himnos</button>
+                </li>
+                <li role="presentation">
+                    <button class="nav-link" id="jubilo-tab" data-bs-toggle="tab" data-bs-target="#jubilo-content" type="button" role="tab">Júbilo</button>
+                </li>
+                <li role="presentation">
+                    <button class="nav-link" id="adoracion-tab" data-bs-toggle="tab" data-bs-target="#adoracion-content" type="button" role="tab">Adoración</button>
+                </li>
+            </ul>
+            <div class="tab-content" id="songsTabContent">
+                <div class="tab-pane fade show active" id="hymns-content" role="tabpanel">
+                    <div class="list-group song-list-grid" id="hymns-list"></div>
+                </div>
+                <div class="tab-pane fade" id="jubilo-content" role="tabpanel">
+                    <div class="list-group song-list-grid" id="jubilo-list"></div>
+                </div>
+                <div class="tab-pane fade" id="adoracion-content" role="tabpanel">
+                    <div class="list-group song-list-grid" id="adoracion-list"></div>
+                </div>
+            </div>
+        </div>
 
+        <!-- VISTA: Detalle Canción -->
+        <div id="view-song-detail" class="view-section d-none">
+            <!-- Barra de herramientas flotante -->
+            <div class="song-tools-bar no-export" id="song-tools-bar-el">
+                <button class="btn btn-outline-secondary btn-sm border-0" id="back-to-songs" style="border-radius:50%;width:36px;height:36px;padding:0;font-size:1.1rem">
+                    <i class="bi bi-arrow-left"></i>
+                </button>
+
+                <div class="d-flex gap-1 align-items-center">
+                    <button class="btn btn-outline-primary btn-sm fw-bold" id="btn-transpose-menu" style="min-width:2.5rem">
+                        <i class="bi bi-music-note"></i>
+                    </button>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-dark px-2" id="btn-font-minus" title="Reducir letra"><i class="bi bi-dash-lg"></i></button>
+                        <button class="btn btn-outline-dark px-2" id="btn-font-plus" title="Aumentar letra"><i class="bi bi-plus-lg"></i></button>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-1 align-items-center">
+                    <button class="btn btn-outline-secondary btn-sm px-2" id="btn-toggle-lyrics" title="Mostrar solo letra">
+                        <i class="bi bi-file-text"></i>
+                    </button>
+
+                    <!-- Autoscroll + velocidad -->
                     <div class="d-flex gap-1 align-items-center">
-                        <button class="btn btn-outline-secondary btn-sm px-2" id="btn-toggle-lyrics" title="Mostrar solo letra"><i class="bi bi-file-text"></i></button>
-                        
-                        <div class="btn-group btn-group-sm ms-1">
-                            <button class="btn btn-outline-success px-3" id="btn-auto-scroll" title="Auto Scroll"><i class="bi bi-play-fill"></i></button>
-                            <button type="button" class="btn btn-outline-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
-                                <span class="visually-hidden">Velocidad</span>
+                        <button class="btn btn-outline-success btn-sm px-2" id="btn-auto-scroll" title="Auto Scroll">
+                            <i class="bi bi-play-fill"></i>
+                        </button>
+                        <div class="dropdown">
+                            <button type="button" class="btn btn-outline-success btn-sm px-2" id="scroll-speed-toggle" title="Velocidad">
+                                <i class="bi bi-speedometer2"></i>
                             </button>
-                            <div class="dropdown-menu dropdown-menu-end p-3 shadow" style="min-width: 250px;">
-                                <label for="scroll-speed-range" class="form-label small fw-bold text-muted mb-2">Velocidad de desplazamiento</label>
+                            <div class="dropdown-menu dropdown-menu-end p-3" id="scroll-speed-menu" style="min-width:240px">
+                                <label for="scroll-speed-range" class="form-label small fw-bold mb-2">Velocidad de desplazamiento</label>
                                 <input type="range" class="form-range" id="scroll-speed-range" min="0" max="100" value="77">
                                 <div class="d-flex justify-content-between small text-muted mt-1">
-                                    <span>Lento</span>
-                                    <span>Rápido</span>
+                                    <span>Lento</span><span>Rápido</span>
                                 </div>
                             </div>
                         </div>
-                        
-                        <div class="dropdown">
-                        <button class="btn btn-sm btn-outline-secondary border-0" type="button" data-bs-toggle="dropdown">
+                    </div>
+
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary border-0" type="button" id="song-more-btn" style="border-radius:50%;width:34px;height:34px;padding:0">
                             <i class="bi bi-three-dots-vertical"></i>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
+                        <ul class="dropdown-menu dropdown-menu-end" id="song-more-menu">
                             <li><a class="dropdown-item" href="#" id="export-png"><i class="bi bi-image"></i> Exportar Imagen</a></li>
-                            <li><hr class="dropdown-divider admin-only"></li>
+                            <li><div class="dropdown-divider admin-only"></div></li>
                             <li><a class="dropdown-item admin-only" href="#" id="btn-edit-song"><i class="bi bi-pencil"></i> Editar</a></li>
                             <li><a class="dropdown-item admin-only text-danger" href="#" id="btn-delete-song"><i class="bi bi-trash"></i> Eliminar</a></li>
                         </ul>
+                    </div>
+                </div>
+            </div>
+
+            <h2 id="detail-title" class="text-center mb-4">Titulo</h2>
+            <div id="song-lyrics" class="lyrics-container"></div>
+            <!-- YouTube -->
+            <div id="youtube-container" class="ratio ratio-16x9 mt-4 d-none"></div>
+        </div>
+
+        <!-- VISTA: Lista de Repertorios -->
+        <div id="view-repertoires" class="view-section d-none">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="mb-0">Repertorios</h2>
+                <button id="btn-add-repertoire" class="btn btn-primary btn-sm d-none admin-only">
+                    <i class="bi bi-plus-lg"></i> Nuevo
+                </button>
+            </div>
+            <div id="repertoires-list" class="row g-3">
+                <!-- JS llenará esto -->
+            </div>
+        </div>
+
+        <!-- VISTA: Perfil / Ajustes -->
+        <div id="view-profile" class="view-section d-none">
+            <div class="container-md mb-4">
+                <h2 class="mb-4 fw-bold"><i class="bi bi-person-circle me-2"></i>Mi Perfil</h2>
+
+                <!-- Settings Card -->
+                <div class="card mb-4" style="border: 1px solid var(--c-border); box-shadow: 0 1px 4px rgba(0,0,0,0.08);">
+                    <div class="card-body p-4">
+                        <h5 class="card-title mb-3 fw-bold text-uppercase" style="font-size: 0.95rem; letter-spacing: 0.5px; color: var(--c-text-secondary);">Preferencias</h5>
+                        
+                        <!-- Theme Switch -->
+                        <div class="d-flex justify-content-between align-items-center p-3 rounded mb-2" style="background: var(--c-surface); border: 1px solid var(--c-border);">
+                            <div>
+                                <p class="fw-bold mb-1" style="font-size: 0.95rem;">Tema Oscuro</p>
+                                <p class="small text-muted mb-0">Cambia la apariencia de la app</p>
+                            </div>
+                            <label class="theme-switch">
+                                <input type="checkbox" id="theme-toggle">
+                                <span class="theme-slider"></span>
+                            </label>
                         </div>
                     </div>
                 </div>
-                
-                <h2 id="detail-title" class="text-center mb-3">Titulo</h2>
-                <div id="song-lyrics" class="lyrics-container bg-white p-4 border rounded"></div>
-                <!-- YouTube Container (Moved to bottom) -->
-                <div id="youtube-container" class="ratio ratio-16x9 mt-4 d-none"></div>
-            </div>
 
-            <!-- Vista Lista de Repertorios -->
-            <div id="view-repertoires" class="view-section d-none">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2 class="h4 mb-0">Repertorios</h2>
-                    <button id="btn-add-repertoire" class="btn btn-primary btn-sm d-none admin-only"><i class="bi bi-plus-lg"></i> Nuevo</button>
-                </div>
-                <div id="repertoires-list" class="row g-3">
-                    <!-- JS llenará esto -->
-                </div>
-            </div>
-
-            <!-- Vista Perfil -->
-            <div id="view-profile" class="view-section d-none">
-                <div class="card shadow-sm mx-auto" style="max-width: 600px;">
+                <!-- Profile Form Card -->
+                <div class="card mb-4" style="border: 1px solid var(--c-border); box-shadow: 0 1px 4px rgba(0,0,0,0.08);">
                     <div class="card-body p-4">
-                        <h3 class="card-title text-center mb-4">Mi Perfil</h3>
+                        <h5 class="card-title mb-3 fw-bold text-uppercase" style="font-size: 0.95rem; letter-spacing: 0.5px; color: var(--c-text-secondary);">Información Personal</h5>
+                        
                         <form id="profile-form">
                             <div class="mb-3">
-                                <label class="form-label">Correo Electrónico</label>
+                                <label class="form-label fw-bold small">Correo Electrónico</label>
                                 <input type="email" class="form-control" id="profile-email" readonly disabled>
-                                <div class="form-text">El correo no se puede cambiar.</div>
+                                <small class="form-text text-muted d-block mt-1">El correo no se puede cambiar.</small>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Nombre Completo</label>
+                                <label class="form-label fw-bold small">Nombre Completo</label>
                                 <input type="text" class="form-control" id="profile-name" required>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Rol</label>
+                                <label class="form-label fw-bold small">Rol</label>
                                 <select class="form-select" id="profile-role" disabled>
                                     <option value="user">Usuario</option>
                                     <option value="admin">Administrador</option>
                                 </select>
-                                <div class="form-text">Solo los administradores pueden cambiar el rol.</div>
+                                <small class="form-text text-muted d-block mt-1">Solo los administradores pueden cambiar el rol.</small>
                             </div>
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-primary" id="btn-save-profile">Guardar Cambios</button>
-                            </div>
+                            <button type="submit" class="btn btn-primary w-100 fw-bold" id="btn-save-profile">
+                                <span class="btn-spinner"></span>
+                                Guardar Cambios
+                            </button>
                         </form>
+                    </div>
+                </div>
 
-                        <hr class="my-4">
-
-                        <h4 class="text-center mb-3">Cambiar Contraseña</h4>
+                <!-- Security Card -->
+                <div class="card mb-4" style="border: 1px solid var(--c-border); box-shadow: 0 1px 4px rgba(0,0,0,0.08);">
+                    <div class="card-body p-4">
+                        <h5 class="card-title mb-3 fw-bold text-uppercase" style="font-size: 0.95rem; letter-spacing: 0.5px; color: var(--c-text-secondary);">Seguridad</h5>
+                        
                         <form id="password-change-form">
                             <div class="mb-3">
-                                <label class="form-label">Nueva Contraseña</label>
+                                <label class="form-label fw-bold small">Nueva Contraseña</label>
                                 <input type="password" class="form-control" id="profile-new-password" required minlength="6" placeholder="Mínimo 6 caracteres">
                             </div>
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-outline-danger" id="btn-change-password">Actualizar Contraseña</button>
-                            </div>
+                            <button type="submit" class="btn btn-outline-danger w-100 fw-bold" id="btn-change-password">
+                                <span class="btn-spinner"></span>
+                                Actualizar Contraseña
+                            </button>
                         </form>
+                    </div>
+                </div>
+
+                <!-- Logout Card -->
+                <div class="card" style="border: 1px solid var(--c-border); box-shadow: 0 1px 4px rgba(0,0,0,0.08);">
+                    <div class="card-body p-4">
+                        <button class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2 fw-bold" id="logout-btn">
+                            <i class="bi bi-box-arrow-right"></i>
+                            Cerrar sesión
+                        </button>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Vista Detalle Repertorio -->
-            <div id="view-repertoire-detail" class="view-section d-none">
-                <div class="song-tools-bar p-1 mb-2 d-flex gap-1 justify-content-between align-items-center no-export rounded shadow-sm">
-                    <button class="btn btn-outline-secondary btn-sm border-0" id="back-to-repertoires" style="font-size: 1.2rem;"><i class="bi bi-arrow-left"></i></button>
-                    
-                    <div class="d-flex gap-1 align-items-center flex-grow-1 justify-content-end">
-                        <select class="form-select form-select-sm w-auto py-0" id="rep-theme-select" style="height: 30px; font-size: 0.85rem;">
-                            <option value="theme-morning">Mañana (Claro)</option>
-                            <option value="theme-night">Noche (Oscuro)</option>
-                            <option value="theme-special">Especial (Evento)</option>
+        <!-- VISTA: Detalle Repertorio -->
+        <div id="view-repertoire-detail" class="view-section d-none">
+            <div class="song-tools-bar no-export mb-2">
+                <button class="btn btn-outline-secondary btn-sm border-0" id="back-to-repertoires" style="border-radius:50%;width:36px;height:36px;padding:0;font-size:1.1rem">
+                    <i class="bi bi-arrow-left"></i>
+                </button>
+
+                <div class="d-flex gap-1 align-items-center flex-grow-1 justify-content-end">
+                    <div class="d-flex flex-column align-items-end align-items-md-center" style="min-width:140px;">
+                        <label for="rep-theme-select" class="small fw-bold mb-1" style="color:#1a2a4a;letter-spacing:1px;">Tema del repertorio</label>
+                        <select class="form-select form-select-sm w-auto" id="rep-theme-select">
+                            <option value="theme-morning">Mañana</option>
+                            <option value="theme-night">Noche</option>
+                            <option value="theme-special">Especial</option>
                         </select>
-                        
-                        <button class="btn btn-primary btn-sm d-none admin-only px-3" id="btn-add-song-to-rep" title="Agregar Canción"><i class="bi bi-plus-lg"></i></button>
-                        <button class="btn btn-success btn-sm d-none" id="btn-save-repertoire-details" title="Guardar"><i class="bi bi-save"></i></button>
-                        
-                        <div class="dropdown ms-1">
-                            <button class="btn btn-sm btn-outline-secondary border-0" type="button" data-bs-toggle="dropdown">
-                                <i class="bi bi-three-dots-vertical"></i>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item admin-only" href="#" id="btn-edit-repertoire"><i class="bi bi-pencil"></i> Editar Datos</a></li>
-                                <li><a class="dropdown-item" href="#" id="export-rep-png"><i class="bi bi-image"></i> Exportar Imagen</a></li>
-                                <li><hr class="dropdown-divider admin-only"></li>
-                                <li><a class="dropdown-item admin-only text-danger" href="#" id="btn-delete-rep"><i class="bi bi-trash"></i> Eliminar</a></li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                
-                <div id="repertoire-content" class="theme-morning p-4 mx-auto shadow-lg" style="max-width: 900px; border-radius: 4px;">
-                    <!-- Encabezado -->
-                    <div class="text-center mb-4 border-bottom border-2 pb-3" style="border-color: currentColor !important;">
-                        <h1 class="fw-bold text-uppercase mb-3 rep-header-title" id="rep-detail-title"></h1>
-                        <input type="text" id="edit-rep-title" class="form-control form-control-lg d-none text-center fw-bold text-uppercase mb-3" style="font-size: 2.5rem; letter-spacing: -2px;">
-                        <div class="d-flex justify-content-center align-items-center gap-3 gap-md-5 mb-3 flex-wrap">
-                            <div class="text-center">
-                                <span class="text-uppercase fw-bold rep-meta-label opacity-75">Fecha</span>
-                                <div id="rep-detail-date" class="fw-bold rep-meta-value"></div>
-                                <input type="date" id="edit-rep-date" class="form-control d-none">
-                            </div>
-                            <div class="text-center">
-                                <span class="text-uppercase fw-bold rep-meta-label opacity-75">Hora</span>
-                                <div id="rep-detail-time" class="fw-bold rep-meta-value"></div>
-                                <input type="time" id="edit-rep-time" class="form-control d-none">
-                            </div>
-                        </div>
-                        <div id="rep-uniform-display" class="fw-bold text-uppercase rep-uniform-box d-none"></div>
-                        <input type="text" id="edit-rep-uniform" class="form-control d-none mt-2" placeholder="Uniforme">
                     </div>
 
-                    <!-- Información de Músicos -->
-                    <div class="row mb-4 rep-musician-section">
-                    <div class="col-md-6 rep-col-divider pb-2 pb-md-0">
-                            <h4 class="text-uppercase mb-3 fw-bold rep-musician-title">Dirección y Voces</h4>
-                            <div class="mb-2"><strong>Director:</strong> 
-                                <span id="rep-director" class="fw-bold"></span>
-                                <input type="text" id="edit-rep-director" class="form-control form-control-sm d-none" list="musicians-list">
-                            </div>
-                            <div class="mb-2"><strong>Coristas:</strong> 
-                                <span id="rep-singers" class="fw-bold"></span>
-                                <input type="text" id="edit-rep-singers" class="form-control form-control-sm d-none" list="musicians-list" placeholder="Nombres separados por comas">
-                            </div>
-                        </div>
-                        <div class="col-md-6 ps-md-4">
-                            <h4 class="text-uppercase mb-3 fw-bold rep-musician-title">Músicos</h4>
-                            <div class="mb-1"><strong>Piano:</strong> 
-                                <span id="rep-piano" class="fw-bold"></span>
-                                <input type="text" id="edit-rep-piano" class="form-control form-control-sm d-none" list="musicians-list">
-                            </div>
-                            <div class="mb-1"><strong>Guitarra:</strong> 
-                                <span id="rep-guitar" class="fw-bold"></span>
-                                <input type="text" id="edit-rep-guitar" class="form-control form-control-sm d-none" list="musicians-list">
-                            </div>
-                            <div class="mb-1"><strong>Bajo:</strong> 
-                                <span id="rep-bass" class="fw-bold"></span>
-                                <input type="text" id="edit-rep-bass" class="form-control form-control-sm d-none" list="musicians-list">
-                            </div>
-                            <div class="mb-1"><strong>Batería:</strong> 
-                                <span id="rep-drums" class="fw-bold"></span>
-                                <input type="text" id="edit-rep-drums" class="form-control form-control-sm d-none" list="musicians-list">
-                            </div>
-                        </div>
-                    </div>
+                    <button class="btn btn-primary btn-sm d-none admin-only" id="btn-add-song-to-rep" title="Agregar Canción">
+                        <i class="bi bi-plus-lg"></i>
+                    </button>
+                    <button class="btn btn-success btn-sm d-none" id="btn-save-repertoire-details" title="Guardar">
+                        <span class="btn-spinner"></span>
+                        <i class="bi bi-save"></i>
+                    </button>
 
-                    <!-- Orden del Culto -->
-                    <div class="mt-4">
-                    <h5 class="text-center text-uppercase fw-bold mb-2 opacity-75" style="letter-spacing: 2px;">Orden del Culto</h5>
-                        <ul id="rep-songs-list" class="list-unstyled">
-                            <!-- Lista de canciones -->
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary border-0" type="button" id="rep-more-btn" style="border-radius:50%;width:34px;height:34px;padding:0">
+                            <i class="bi bi-three-dots-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" id="rep-more-menu">
+                            <li><a class="dropdown-item admin-only" href="#" id="btn-edit-repertoire"><i class="bi bi-pencil"></i> Editar Datos</a></li>
+                            <li><a class="dropdown-item" href="#" id="export-rep-png"><i class="bi bi-image"></i> Exportar Imagen</a></li>
+                            <li><div class="dropdown-divider admin-only"></div></li>
+                            <li><a class="dropdown-item admin-only text-danger" href="#" id="btn-delete-rep"><i class="bi bi-trash"></i> Eliminar</a></li>
                         </ul>
                     </div>
                 </div>
             </div>
-        </main>
-    </div>
 
-    <!-- Modal Edición/Creación -->
-    <div class="modal fade" id="songModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="songModalLabel">Gestión de Canción</h5>
-                    <button type="button" class="btn btn-outline-info btn-sm ms-3" id="btn-open-import">⚡ Importar</button>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="song-form">
-                        <input type="hidden" id="song-id">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Título</label>
-                                <input type="text" class="form-control" id="song-title" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Autor</label>
-                                <input type="text" class="form-control" id="song-author">
-                            </div>
+            <div id="repertoire-content" class="theme-morning mx-auto" style="max-width:900px; padding: 40px; border-radius: 4px;">
+                <!-- Encabezado -->
+                <div class="text-center mb-2">
+                    <h1 class="fw-black text-uppercase mb-2 rep-header-main-title" id="rep-detail-title" style="font-size: 2.8rem; letter-spacing: -1px; line-height: 0.9; margin-bottom: 32px !important; font-family: 'Georgia', serif;"></h1>
+                    <input type="text" id="edit-rep-title" class="form-control form-control-lg d-none text-center fw-bold text-uppercase mb-3" style="font-size: 2rem; font-family: 'Georgia', serif;">
+                    
+                    <!-- Fecha y Hora en línea debajo del título -->
+                    <div class="rep-header-meta mb-4" style="gap: 2rem; margin-bottom: 1.2rem !important;">
+                        <div class="rep-header-meta-item">
+                            <div class="rep-meta-label" style="font-size: 0.7rem; font-family: 'Playfair Display', serif;">FECHA</div>
+                            <div id="rep-detail-date" class="rep-meta-value" style="font-size: 1.8rem; font-family: 'Playfair Display', serif;"></div>
+                            <input type="date" id="edit-rep-date" class="form-control d-none">
                         </div>
-                        <div class="row mb-3">
-                            <div class="col-md-6 col-lg-3">
-                                <label class="form-label">Tono Original</label>
-                                <input type="text" class="form-control" id="song-key" placeholder="Ej: C, G, Am" style="text-transform: uppercase;">
-                                <div id="key-error" class="invalid-feedback">Tonalidad inválida. Usa notación inglesa (Ej: C, F#, Bbm).</div>
-                            </div>
-                            <div class="col-md-6 col-lg-3">
-                                <label class="form-label">Tipo</label>
-                                <select class="form-select" id="song-type">
-                                    <option value="himno">Himno</option>
-                                    <option value="jubilo">Júbilo</option>
-                                    <option value="adoracion">Adoración</option>
-                                    <option value="ofrenda">Ofrenda</option>
-                                </select>
-                            </div>
-                            <div class="col-12 col-lg-6" id="div-youtube-input">
-                                <label class="form-label">YouTube URL</label>
-                                <input type="text" class="form-control" id="song-youtube">
-                            </div>
+                        <div class="rep-header-meta-item">
+                            <div class="rep-meta-label" style="font-size: 0.7rem; font-family: 'Playfair Display', serif;">HORA</div>
+                            <div id="rep-detail-time" class="rep-meta-value" style="font-size: 1.7rem; font-family: 'Playfair Display', serif;"></div>
+                            <input type="time" id="edit-rep-time" class="form-control d-none">
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Letra y Acordes (Formato [C]Letra)</label>
-                            <textarea class="form-control" id="song-lyrics-input" rows="10" style="font-family: monospace;"></textarea>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" id="btn-save-song">Guardar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Repertorio -->
-    <div class="modal fade" id="repertoireModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Gestión de Repertorio</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="repertoire-form">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Título</label>
-                                <input type="text" class="form-control" id="rep-title" required placeholder="Ej: Culto Dominical">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Fecha</label>
-                                <input type="date" class="form-control" id="rep-date" required>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Hora</label>
-                                <input type="time" class="form-control" id="rep-time" required>
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Director</label>
-                                <input type="text" class="form-control" id="rep-director-input" list="musicians-list" placeholder="Nombre del director">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Uniforme</label>
-                                <input type="text" class="form-control" id="rep-uniform">
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-12">
-                                <label class="form-label">Coristas</label>
-                                <input type="text" class="form-control" id="rep-singers-input" list="musicians-list" placeholder="Nombres separados por comas">
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-6 col-md-3"><label class="form-label">Piano</label><input type="text" class="form-control" id="rep-piano-input" list="musicians-list"></div>
-                            <div class="col-6 col-md-3"><label class="form-label">Guitarra</label><input type="text" class="form-control" id="rep-guitar-input" list="musicians-list"></div>
-                            <div class="col-6 col-md-3"><label class="form-label">Batería</label><input type="text" class="form-control" id="rep-drums-input" list="musicians-list"></div>
-                            <div class="col-6 col-md-3"><label class="form-label">Bajo</label><input type="text" class="form-control" id="rep-bass-input" list="musicians-list"></div>
-                        </div>
-                        <datalist id="musicians-list"></datalist>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" id="btn-save-repertoire">Crear Repertorio</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Agregar Canción a Repertorio -->
-    <div class="modal fade" id="addSongModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header"><h5 class="modal-title">Agregar Canción</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Sección</label>
-                        <select class="form-select" id="input-song-section">
-                            <option value="HIMNOS DE GLORIA Y TRIUNFO">HIMNOS DE GLORIA Y TRIUNFO</option>
-                            <option value="ALABANZAS DE JUBILO">ALABANZAS DE JUBILO</option>
-                            <option value="ALABANZAS DE ADORACION">ALABANZAS DE ADORACION</option>
-                            <option value="OFRENDA">OFRENDA</option>
-                            <option value="OTRO">OTRO</option>
-                        </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Buscar</label>
-                        <input type="text" class="form-control" id="input-song-search" placeholder="Escribe para filtrar...">
+
+                    <!-- Uniforme Pill Box -->
+                    <div id="rep-uniform-container" class="mb-2 text-center">
+                        <div id="rep-uniform-display" class="rep-pill-box d-inline-block px-5 py-2 fw-black text-uppercase" style="border: 2px solid currentColor; border-radius: 50px; font-size: 1.35rem; min-width: 300px; font-family: 'Georgia', serif; display: block; margin: 0 auto;"></div>
+                        <input type="text" id="edit-rep-uniform" class="form-control d-none mx-auto mt-2" style="max-width: 400px;" placeholder="Uniforme">
+                    </div>
+                    <hr class="rep-divider" style="height: 2px; margin: 0.8rem 0;">
+                </div>
+
+                <!-- Dirección y Voces | Músicos (2 Columnas con divisor vertical) -->
+                <div class="rep-musicians-section mb-5">
+                    <div class="rep-musicians-column">
+                        <h4 class="text-uppercase mb-3 fw-black rep-musicians-title">Dirección y Voces</h4>
+                        <div class="rep-musician-item">
+                            <span class="rep-musician-role">Director:</span> <span id="rep-director" class="fw-black"></span>
+                            <input type="text" id="edit-rep-director" class="form-control form-control-sm d-none">
+                        </div>
+                        <div class="rep-musician-item">
+                            <span class="rep-musician-role">Coristas:</span> <span id="rep-singers" class="fw-black"></span>
+                            <input type="text" id="edit-rep-singers" class="form-control form-control-sm d-none">
+                        </div>
+                    </div>
+
+                    <!-- Divisor Vertical -->
+                    <div class="rep-musicians-divider"></div>
+
+                    <!-- Músicos -->
+                    <div class="rep-musicians-column">
+                        <h4 class="text-uppercase mb-3 fw-black rep-musicians-title">Músicos</h4>
+                        <div class="rep-musician-item">
+                            <span class="rep-musician-role">Piano:</span> <span id="rep-piano" class="fw-black"></span>
+                            <input type="text" id="edit-rep-piano" class="form-control form-control-sm d-none">
+                        </div>
+                        <div class="rep-musician-item">
+                            <span class="rep-musician-role">Guitarra:</span> <span id="rep-guitar" class="fw-black"></span>
+                            <input type="text" id="edit-rep-guitar" class="form-control form-control-sm d-none">
+                        </div>
+                        <div class="rep-musician-item">
+                            <span class="rep-musician-role">Bajo:</span> <span id="rep-bass" class="fw-black"></span>
+                            <input type="text" id="edit-rep-bass" class="form-control form-control-sm d-none">
+                        </div>
+                        <div class="rep-musician-item">
+                            <span class="rep-musician-role">Batería:</span> <span id="rep-drums" class="fw-black"></span>
+                            <input type="text" id="edit-rep-drums" class="form-control form-control-sm d-none">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Orden del Culto -->
+                <div class="mt-4">
+                    <div class="text-center mb-4">
+                        <span class="text-uppercase fw-bold text-muted" style="letter-spacing: 3px; font-size: 0.9rem;">Orden del Culto</span>
+                    </div>
+                    <ul id="rep-songs-list" class="list-unstyled mb-0"></ul>
+                </div>
+            </div>
+        </div>
+
+    </main><!-- /main -->
+</div><!-- /app -->
+
+<!-- ═══════════════════════════════════════════
+     MODALS
+     ═══════════════════════════════════════════ -->
+
+<!-- Modal Edición/Creación Canción -->
+<div class="modal fade" id="songModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="songModalLabel">Gestión de Canción</h5>
+                <button type="button" class="btn btn-outline-info btn-sm ms-3" id="btn-open-import">⚡ Importar</button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <form id="song-form">
+                    <input type="hidden" id="song-id">
+                    <div class="row mb-3">
+                        <div class="col-md-6"><label class="form-label">Título</label><input type="text" class="form-control" id="song-title" required></div>
+                        <div class="col-md-6"><label class="form-label">Autor</label><input type="text" class="form-control" id="song-author"></div>
                     </div>
                     <div class="row mb-3">
-                        <div class="col-8">
-                            <label class="form-label">Canción</label>
-                            <select class="form-select" id="select-song-to-add"></select>
+                        <div class="col-md-6 col-lg-3">
+                            <label class="form-label">Tono Original</label>
+                            <input type="text" class="form-control" id="song-key" placeholder="Ej: C, G, Am" style="text-transform:uppercase">
+                            <div id="key-error" class="invalid-feedback">Tonalidad inválida. Usa notación inglesa (Ej: C, F#, Bbm).</div>
                         </div>
-                        <div class="col-4">
-                            <label class="form-label">Tono</label>
-                            <input type="text" class="form-control" id="input-song-key-repertoire" placeholder="Ej: G">
+                        <div class="col-md-6 col-lg-3">
+                            <label class="form-label">Tipo</label>
+                            <select class="form-select" id="song-type">
+                                <option value="himno">Himno</option>
+                                <option value="jubilo">Júbilo</option>
+                                <option value="adoracion">Adoración</option>
+                                <option value="ofrenda">Ofrenda</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-lg-6" id="div-youtube-input">
+                            <label class="form-label">YouTube URL</label>
+                            <input type="text" class="form-control" id="song-youtube">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Letra y Acordes (Formato [C]Letra)</label>
+                        <textarea class="form-control" id="song-lyrics-input" rows="10" style="font-family:monospace;font-size:13px"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btn-save-song">
+                    <span class="btn-spinner"></span>
+                    Guardar Canción
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Repertorio -->
+<div class="modal fade" id="repertoireModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Gestión de Repertorio</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="repertoire-form">
+                    <div class="row mb-3">
+                        <div class="col-md-6"><label class="form-label">Título</label><input type="text" class="form-control" id="rep-title" required placeholder="Ej: Culto Dominical"></div>
+                        <div class="col-md-3"><label class="form-label">Fecha</label><input type="date" class="form-control" id="rep-date" required></div>
+                        <div class="col-md-3"><label class="form-label">Hora</label><input type="time" class="form-control" id="rep-time" required></div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6"><label class="form-label">Director</label><input type="text" class="form-control" id="rep-director-input" list="musicians-list" placeholder="Nombre del director"></div>
+                        <div class="col-md-6"><label class="form-label">Uniforme</label><input type="text" class="form-control" id="rep-uniform"></div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-12"><label class="form-label">Coristas</label><input type="text" class="form-control" id="rep-singers-input" list="musicians-list" placeholder="Nombres separados por comas"></div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6 col-md-3"><label class="form-label">Piano</label><input type="text" class="form-control" id="rep-piano-input" list="musicians-list"></div>
+                        <div class="col-6 col-md-3"><label class="form-label">Guitarra</label><input type="text" class="form-control" id="rep-guitar-input" list="musicians-list"></div>
+                        <div class="col-6 col-md-3"><label class="form-label">Batería</label><input type="text" class="form-control" id="rep-drums-input" list="musicians-list"></div>
+                        <div class="col-6 col-md-3"><label class="form-label">Bajo</label><input type="text" class="form-control" id="rep-bass-input" list="musicians-list"></div>
+                    </div>
+                    <datalist id="musicians-list"></datalist>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="btn-save-repertoire">Crear Repertorio</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Agregar Canción a Repertorio -->
+<div class="modal fade" id="addSongModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Agregar Canción</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Sección</label>
+                    <select class="form-select" id="input-song-section">
+                        <option value="HIMNOS DE GLORIA Y TRIUNFO">HIMNOS DE GLORIA Y TRIUNFO</option>
+                        <option value="ALABANZAS DE JUBILO">ALABANZAS DE JUBILO</option>
+                        <option value="ALABANZAS DE ADORACION">ALABANZAS DE ADORACION</option>
+                        <option value="OFRENDA">OFRENDA</option>
+                        <option value="OTRO">OTRO</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Buscar Canción</label>
+                    <div class="position-relative">
+                        <input type="text" class="form-control mb-1" id="input-song-search-autoc" placeholder="Escribe título o autor..." autocomplete="off">
+                        
+                        <!-- Dropdown de Autocomplete -->
+                        <div id="autocomplete-dropdown" class="list-group shadow-m position-absolute w-100 d-none" style="z-index: 2000; max-height: 250px; overflow-y: auto;">
+                            <!-- Resultados insertados dinámicamente -->
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer"><button type="button" class="btn btn-primary" id="btn-confirm-add-song">Agregar</button></div>
+                
+                <div class="mb-3">
+                    <label class="form-label">O Seleccionar de la Lista</label>
+                    <select class="form-select" id="input-song-select">
+                        <option value="">-- Selecciona una canción --</option>
+                    </select>
+                </div>
+                
+                <div class="row mb-3 d-none" id="selected-song-view">
+                    <div class="col-8">
+                        <label class="form-label">Selección Confirmada</label>
+                        <div class="form-control bg-light fw-bold" id="selected-song-name-display">-</div>
+                        <input type="hidden" id="hidden-selected-song-id">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label">Tono</label>
+                        <input type="text" class="form-control" id="input-song-key-repertoire" placeholder="Ej: G">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="resetAutocomplete()">Cambiar</button>
+                <button type="button" class="btn btn-primary" id="btn-confirm-add-song" disabled>Agregar</button>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Modal Transposición -->
-    <div class="modal fade" id="transposeModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Cambiar Tonalidad</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="d-grid gap-2" style="grid-template-columns: repeat(2, 1fr);" id="transpose-grid">
-                        <!-- Botones generados por JS -->
-                    </div>
-                </div>
+<!-- Modal Transposición -->
+<div class="modal fade" id="transposeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cambiar Tonalidad</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-        </div>
-    </div>
-
-    <!-- Modal Importar -->
-    <div class="modal fade" id="importModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Importar Letra y Acordes</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Subir archivo (.txt)</label>
-                        <input type="file" class="form-control" id="import-file" accept=".txt">
-                        <div class="form-text">El nombre del archivo se usará como título de la canción.</div>
-                    </div>
-                    <hr>
-                    <div class="mb-3">
-                        <label class="form-label">Buscar en Internet</label>
-                        <div class="input-group">
-                            <input type="text" class="form-control" id="import-search-query" placeholder="Nombre de la canción...">
-                            <button class="btn btn-outline-primary" id="btn-search-external">🔍 Buscar Acordes</button>
-                        </div>
-                        <div class="form-text">Se abrirá una nueva pestaña. Copia el contenido y pégalo abajo.</div>
-                    </div>
-                    <hr>
-                    <div class="mb-3">
-                        <label class="form-label">Pegar contenido aquí</label>
-                        <textarea class="form-control" id="import-textarea" rows="10" placeholder="Pega aquí la letra con acordes (formato texto)..."></textarea>
-                    </div>
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" id="chk-smart-convert" checked>
-                        <label class="form-check-label" for="chk-smart-convert">
-                            Conversión Inteligente (Detectar acordes encima de la letra)
-                        </label>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" id="btn-process-import">Importar al Editor</button>
+            <div class="modal-body">
+                <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem" id="transpose-grid">
+                    <!-- Botones generados por JS -->
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Modal Importación Masiva -->
-    <div class="modal fade" id="bulkImportModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Resultado de la Importación Masiva</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<!-- Modal Importar -->
+<div class="modal fade" id="importModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Importar Letra y Acordes</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Subir archivo (.txt)</label>
+                    <input type="file" class="form-control" id="import-file" accept=".txt">
+                    <div class="form-text">El nombre del archivo se usará como título de la canción.</div>
                 </div>
-                <div class="modal-body">
-                    <p>Se intentarán importar todos los archivos <code>.txt</code> de la carpeta seleccionada. Los himnos existentes (por título) serán omitidos.</p>
-                    <ul id="bulk-import-status" class="list-group">
-                        <!-- JS llenará el estado aquí -->
-                    </ul>
+                <hr>
+                <div class="mb-3">
+                    <label class="form-label">Buscar en Internet</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="import-search-query" placeholder="Nombre de la canción...">
+                        <button class="btn btn-outline-primary" id="btn-search-external">🔍 Buscar Acordes</button>
+                    </div>
+                    <div class="form-text">Se abrirá una nueva pestaña. Copia el contenido y pégalo abajo.</div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <hr>
+                <div class="mb-3">
+                    <label class="form-label">Pegar contenido aquí</label>
+                    <textarea class="form-control" id="import-textarea" rows="10" placeholder="Pega aquí la letra con acordes (formato texto)..."></textarea>
                 </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="chk-smart-convert" checked>
+                    <label class="form-check-label" for="chk-smart-convert">
+                        Conversión Inteligente (Detectar acordes encima de la letra)
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="btn-process-import">Importar al Editor</button>
             </div>
         </div>
     </div>
+</div>
 
-    <footer class="footer mt-auto py-3 bg-light">
-        <div class="container text-center">
-            <span class="text-muted small">&copy; 2026 Adoradores Del Rey. Todos los derechos reservados.</span>
-        </div>
-    </footer>
-
-    <!-- Contenedor de Notificaciones (Toasts) -->
-    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
-        <div id="liveToast" class="toast align-items-center text-white bg-primary border-0" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="d-flex">
-                <div class="toast-body" id="toast-body">Hello, world! This is a toast message.</div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+<!-- Modal Importación Masiva -->
+<div class="modal fade" id="bulkImportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Resultado de la Importación Masiva</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Se intentarán importar todos los archivos <code>.txt</code> de la carpeta seleccionada. Los himnos existentes (por título) serán omitidos.</p>
+                <ul id="bulk-import-status" class="list-group"></ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
             </div>
         </div>
     </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-    
-    <!-- Main App Logic -->
-    <script type="module" src="src/js/app.js"></script>
+<!-- Bottom Navigation Bar (mobile only) -->
+<nav class="bottom-nav d-md-none glass-effect" id="bottom-nav">
+    <a href="#" class="bottom-nav-item active" id="bnav-home">
+        <i class="bi bi-house-fill"></i>
+        <span>Inicio</span>
+    </a>
+    <a href="#" class="bottom-nav-item" id="bnav-songs">
+        <i class="bi bi-music-note-list"></i>
+        <span>Canciones</span>
+    </a>
+    <a href="#" class="bottom-nav-item" id="bnav-repertoires">
+        <i class="bi bi-journal-text"></i>
+        <span>Repertorios</span>
+    </a>
+    <a href="#" class="bottom-nav-item" id="bnav-profile">
+        <i class="bi bi-person-circle"></i>
+        <span>Perfil</span>
+    </a>
+</nav>
+
+<!-- Toast container (reemplaza el toast de Bootstrap) -->
+<div id="toast-container"></div>
+<!-- Toast oculto para compatibilidad con API de Bootstrap Toast que usa app.js -->
+<div style="display:none" aria-hidden="true">
+    <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body" id="toast-body"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<!-- Bootstrap JS solo para Modal/Tab/Toast API que usa app.js -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+
+<!-- Mini UI Script: Dropdowns, Theme, Tab panels sin Bootstrap -->
+<script>
+(function() {
+    // ── Theme Toggle ──
+    function applyTheme(dark) {
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+        localStorage.setItem('adr-theme', dark ? 'dark' : 'light');
+        const mc = document.getElementById('meta-theme-color');
+        if (mc) mc.content = dark ? '#100f0e' : '#ffffff';
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const toggle = document.getElementById('theme-toggle');
+        if (toggle) {
+            const isDark = localStorage.getItem('adr-theme') === 'dark';
+            toggle.checked = isDark;
+            toggle.addEventListener('change', function() {
+                applyTheme(this.checked);
+            });
+        }
+
+        // ── Dropdown toggle (replaces Bootstrap dropdown for our custom ones) ──
+        // We'll use data-bs-toggle="dropdown" bootstrap ones still work with BS JS
+        // But add our own for the song-tools custom dropdowns
+        function setupDropdown(toggleId, menuId) {
+            const btn = document.getElementById(toggleId);
+            const menu = document.getElementById(menuId);
+            if (!btn || !menu) return;
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const isOpen = menu.classList.contains('show');
+                closeAllDropdowns();
+                if (!isOpen) menu.classList.add('show');
+            });
+        }
+        setupDropdown('scroll-speed-toggle', 'scroll-speed-menu');
+        setupDropdown('song-more-btn', 'song-more-menu');
+        setupDropdown('rep-more-btn', 'rep-more-menu');
+
+        function closeAllDropdowns() {
+            document.querySelectorAll('.dropdown-menu.show').forEach(m => m.classList.remove('show'));
+        }
+        document.addEventListener('click', closeAllDropdowns);
+        document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeAllDropdowns(); });
+
+        // ── Tab system (CSS + JS, replaces Bootstrap Tab for cosmetic tabs) ──
+        document.querySelectorAll('[data-bs-toggle="tab"]').forEach(function(tabBtn) {
+            tabBtn.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-bs-target');
+                const parentNav = this.closest('.nav-tabs');
+                if (parentNav) parentNav.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+
+                const tabContent = document.getElementById('songsTabContent');
+                if (tabContent) {
+                    tabContent.querySelectorAll('.tab-pane').forEach(p => { p.classList.remove('show', 'active'); });
+                    const target = tabContent.querySelector(targetId);
+                    if (target) { target.classList.add('show', 'active'); }
+                }
+            });
+        });
+
+        // ── Visual toast override ──
+        // app.js handles toasts through showToast() which creates custom elements
+
+        // ── Bottom nav: mirror events from top nav ──
+        function syncBottomNav(activeId) {
+            const bnavMap = {
+                'nav-home': 'bnav-home',
+                'nav-songs': 'bnav-songs',
+                'nav-repertoires': 'bnav-repertoires',
+                'nav-profile': 'bnav-profile'
+            };
+            document.querySelectorAll('.bottom-nav-item').forEach(el => el.classList.remove('active'));
+            const bId = bnavMap[activeId];
+            if (bId) { const el = document.getElementById(bId); if (el) el.classList.add('active'); }
+        }
+
+        // Wire up bottom nav items to top nav clicks
+        const bnavPairs = [
+            ['bnav-home', 'nav-home'],
+            ['bnav-songs', 'nav-songs'],
+            ['bnav-repertoires', 'nav-repertoires'],
+            ['bnav-profile', 'nav-profile']
+        ];
+        bnavPairs.forEach(([bId, topId]) => {
+            const bEl = document.getElementById(bId);
+            const topEl = document.getElementById(topId);
+            if (bEl && topEl) {
+                bEl.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    topEl.click(); // delegate to top nav which app.js already handles
+                    document.querySelectorAll('.bottom-nav-item').forEach(el => el.classList.remove('active'));
+                    bEl.classList.add('active');
+                });
+            }
+        });
+    });
+})();
+
+</script>
+
+<!-- Main App Logic -->
+<script type="module" src="src/js/app.js"></script>
 </body>
 </html>
