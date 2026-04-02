@@ -29,10 +29,21 @@ export function showToast(message, type = 'info') {
 }
 
 export function showView(viewId, pushToHistory = true) {
-    ['view-home', 'view-songs', 'view-song-detail', 'view-repertoires', 'view-repertoire-detail', 'view-profile'].forEach(id => {
-        document.getElementById(id).classList.add('d-none');
+    const viewIds = ['view-home', 'view-songs', 'view-song-detail', 'view-repertoires', 'view-repertoire-detail', 'view-profile'];
+    
+    // Hide all views
+    viewIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.classList.add('d-none');
+        }
     });
-    document.getElementById(viewId).classList.remove('d-none');
+    
+    // Show target view
+    const targetEl = document.getElementById(viewId);
+    if (targetEl) {
+        targetEl.classList.remove('d-none');
+    }
 
     // Actualizar clase activa en AMBAS navs (top y bottom)
     const navMap = {
@@ -58,18 +69,38 @@ export function showView(viewId, pushToHistory = true) {
         history.pushState({ viewId }, '', '#' + viewId.replace('view-', ''));
     }
 
-    // Ocultar navegación en móvil al entrar a detalles de canción
-    if (viewId === 'view-song-detail') {
+    // Ocultar navegación en móvil al entrar a detalles de canción o repertorio
+    if (viewId === 'view-song-detail' || viewId === 'view-repertoire-detail') {
         document.body.classList.add('in-song');
     } else {
         document.body.classList.remove('in-song');
     }
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
 export function closeNavbar() {
     // No-op (tab bar)
+}
+
+/**
+ * Handle modal visibility to hide bottom navbar on mobile
+ */
+export function initModalNavbarHandlers() {
+    // Get all modals
+    const modals = document.querySelectorAll('.modal');
+    
+    modals.forEach(modal => {
+        // When modal shows, hide navbar
+        modal.addEventListener('show.bs.modal', () => {
+            document.body.classList.add('modal-open-navbar-hidden');
+        });
+        
+        // When modal hides, show navbar again
+        modal.addEventListener('hidden.bs.modal', () => {
+            document.body.classList.remove('modal-open-navbar-hidden');
+        });
+    });
 }
 
 // Lógica de Skeletons (Nuevo)

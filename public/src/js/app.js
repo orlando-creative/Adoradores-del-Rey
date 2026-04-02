@@ -3,7 +3,7 @@ import { getCurrentProfile, logout } from './auth.js';
 import { renderSong } from './chords-render.js';
 import { scales } from './transpose.js';
 import { state } from './modules/state.js';
-import { showToast, showView, toggleLoading, showSkeletons, showCardSkeletons, closeNavbar, changeFontSize, toggleAutoScroll, startScrollInterval, stopAutoScroll, toggleLyricsOnly } from './modules/ui.js';
+import { showToast, showView, toggleLoading, showSkeletons, showCardSkeletons, closeNavbar, changeFontSize, toggleAutoScroll, startScrollInterval, stopAutoScroll, toggleLyricsOnly, initModalNavbarHandlers } from './modules/ui.js';
 import { exportElementAsPNG } from './modules/export.js';
 
 // Usaremos "state" como contenedor de variables globales para migrar a poco a módulos
@@ -95,6 +95,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     addSongModal = new bootstrap.Modal(document.getElementById('addSongModal'));
     transposeModal = new bootstrap.Modal(document.getElementById('transposeModal'));
     importModal = new bootstrap.Modal(document.getElementById('importModal'));
+
+    // Inicializar handlers para ocultar navbar cuando se abren modales en móvil
+    initModalNavbarHandlers();
 
     // Inicializar historial para el botón atrás del celular
     history.replaceState({ viewId: 'view-home' }, '', '#home');

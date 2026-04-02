@@ -1602,6 +1602,22 @@ code { background: var(--c-surface2); padding: .1em .4em; border-radius: 4px; fo
 .song-selection-checkbox { display: none; }
 #view-songs.selection-mode .song-selection-checkbox { display: inline-flex !important; }
 
+/* ── View Transitions (Smooth fade in/out) ── */
+.view-section {
+    transition: none; /* Remove transition to prevent flickering */
+}
+.view-section.d-none {
+    display: none !important;
+}
+.view-section:not(.d-none) {
+    opacity: 1;
+}
+
+/* ── Bootstrap Modal z-index adjustments ── */
+/* Reduce modal z-index so bottom-nav can be clicked */
+.modal-backdrop { z-index: 998 !important; }
+.modal { z-index: 999 !important; }
+
 /* ── Responsive tweaks ── */
 @media (max-width: 767px) {
     .rep-col-divider { border-right: none !important; border-bottom: 2px solid rgba(0,0,0,.15); padding-bottom: .75rem; margin-bottom: .75rem; padding-right: 0 !important; }

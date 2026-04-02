@@ -15,13 +15,17 @@
         display: flex !important;
         padding-bottom: env(safe-area-inset-bottom, 0px) !important;
         height: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
-        z-index: 9990 !important;
+        z-index: 9999 !important; /* Higher than modal backdrop (998) and modal (999) */
     }
 
     /* HIDE bottom nav when inside a song detail */
     body.in-song .bottom-nav { display: none !important; }
     body.in-song { padding-bottom: 0 !important; }
     body.in-song::after { display: none !important; }
+    /* HIDE bottom nav when a modal is open */
+    body.modal-open-navbar-hidden .bottom-nav { display: none !important; }
+    body.modal-open-navbar-hidden { padding-bottom: 0 !important; }
+    body.modal-open-navbar-hidden::after { display: none !important; }
 
     .container, .container-fluid { padding: 0 .75rem; }
     main.container { margin-top: .75rem !important; }
