@@ -98,7 +98,11 @@ export function initModalNavbarHandlers() {
         
         // When modal hides, show navbar again
         modal.addEventListener('hidden.bs.modal', () => {
-            document.body.classList.remove('modal-open-navbar-hidden');
+            // Solo mostrar la barra si no quedan otros modales abiertos (evita problemas con modales anidados)
+            const openModals = document.querySelectorAll('.modal.show');
+            if (openModals.length === 0) {
+                document.body.classList.remove('modal-open-navbar-hidden');
+            }
         });
     });
 }

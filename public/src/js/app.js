@@ -5,6 +5,7 @@ import { scales } from './transpose.js';
 import { state } from './modules/state.js';
 import { showToast, showView, toggleLoading, showSkeletons, showCardSkeletons, closeNavbar, changeFontSize, toggleAutoScroll, startScrollInterval, stopAutoScroll, toggleLyricsOnly, initModalNavbarHandlers } from './modules/ui.js';
 import { exportElementAsPNG } from './modules/export.js';
+import { initDragToDismiss } from './modules/dragToDismiss.js';
 
 // Usaremos "state" como contenedor de variables globales para migrar a poco a módulos
 // state.currentSong; state.currentRepertoire; etc.
@@ -98,6 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Inicializar handlers para ocultar navbar cuando se abren modales en móvil
     initModalNavbarHandlers();
+    initDragToDismiss();
 
     // Inicializar historial para el botón atrás del celular
     history.replaceState({ viewId: 'view-home' }, '', '#home');
