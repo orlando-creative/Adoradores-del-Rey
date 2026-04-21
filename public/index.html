@@ -31,6 +31,32 @@
             }
         })();
     </script>
+    <style>
+        /* Optimización de botones y rendimiento visual */
+        .btn, .card, .stat-card, .repertoire-card, .glass-effect, .shadow-sm, .shadow-lg, .song-tools-bar {
+            box-shadow: none !important;
+            -webkit-box-shadow: none !important;
+            transition: none !important; /* Respuesta instantánea */
+        }
+        .btn, .nav-item-link, .bottom-nav-item {
+            touch-action: manipulation; /* Elimina retraso de clic en móvil */
+        }
+        .stat-card, .repertoire-card {
+            border: 1px solid var(--c-border) !important;
+        }
+        /* Quitar sombreado al tocar en móviles */
+        * { -webkit-tap-highlight-color: transparent; }
+
+        /* Ajustes específicos para el diseño de Repertorios */
+        .rep-song-title {
+            font-size: 1.25rem !important; /* Letra ligeramente más grande */
+            font-weight: 700;
+        }
+        .theme-night {
+            background: linear-gradient(to top, #000814 0%, #000000 100%) !important;
+            color: #f5f5f5 !important;
+        }
+    </style>
 </head>
 <body>
 <div id="app">
@@ -153,6 +179,9 @@
                 <li role="presentation">
                     <button class="nav-link" id="adoracion-tab" data-bs-toggle="tab" data-bs-target="#adoracion-content" type="button" role="tab">Adoración</button>
                 </li>
+                <li role="presentation">
+                    <button class="nav-link" id="kids-tab" data-bs-toggle="tab" data-bs-target="#kids-content" type="button" role="tab">Niños</button>
+                </li>
             </ul>
             <div class="tab-content" id="songsTabContent">
                 <div class="tab-pane fade show active" id="hymns-content" role="tabpanel">
@@ -163,6 +192,9 @@
                 </div>
                 <div class="tab-pane fade" id="adoracion-content" role="tabpanel">
                     <div class="list-group song-list-grid" id="adoracion-list"></div>
+                </div>
+                <div class="tab-pane fade" id="kids-content" role="tabpanel">
+                    <div class="list-group song-list-grid" id="kids-list"></div>
                 </div>
             </div>
         </div>
@@ -479,6 +511,7 @@
                                 <option value="jubilo">Júbilo</option>
                                 <option value="adoracion">Adoración</option>
                                 <option value="ofrenda">Ofrenda</option>
+                                <option value="ninos">Niños</option>
                             </select>
                         </div>
                         <div class="col-12 col-lg-6" id="div-youtube-input">
@@ -557,6 +590,7 @@
                         <option value="ALABANZAS DE JUBILO">ALABANZAS DE JUBILO</option>
                         <option value="ALABANZAS DE ADORACION">ALABANZAS DE ADORACION</option>
                         <option value="OFRENDA">OFRENDA</option>
+                        <option value="NIÑOS">NIÑOS</option>
                         <option value="OTRO">OTRO</option>
                     </select>
                 </div>

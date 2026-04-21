@@ -20,6 +20,10 @@ lyricsStyles.textContent = `
         white-space: normal !important;
         overflow-wrap: break-word !important;
     }
+    /* Botones sin sombras en el detalle */
+    .song-tools-bar button {
+        box-shadow: none !important;
+    }
     .lyrics-only .section-header {
         text-align: center !important;
         font-family: 'Roboto', 'Segoe UI', sans-serif !important;
@@ -50,6 +54,11 @@ lyricsStyles.textContent = `
     }
     .lyrics {
         font-family: 'Roboto', 'Segoe UI', sans-serif;
+    }
+    /* Asegurar que el degradado se vea bien en el contenedor */
+    #repertoire-content.theme-night {
+        background: linear-gradient(to top, #000814 0%, #000000 100%) !important;
+        color: #f5f5f5 !important;
     }
 `;
 document.head.appendChild(lyricsStyles);
@@ -226,13 +235,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('btn-save-repertoire-details').addEventListener('click', saveRepertoireDetails);
     document.getElementById('btn-add-song-to-rep').addEventListener('click', openAddSongModal);
     document.getElementById('btn-confirm-add-song').addEventListener('click', addSongToRepertoire);
-    // Listeners del input-search fueron movidos al closure inyectado en runtime del Autocomplete UI
+
     document.getElementById('btn-select-songs').addEventListener('click', () => toggleSelectionMode(true));
     document.getElementById('btn-cancel-selection').addEventListener('click', () => toggleSelectionMode(false));
     document.getElementById('btn-delete-selected').addEventListener('click', deleteSelectedSongs);
     document.getElementById('song-type').addEventListener('change', toggleYoutubeInput);
-    document.getElementById('song-list-search').addEventListener('input', filterSongsList);
-    
+
+    // Delegación de eventos para las listas (Soluciona clics lentos y falta de respuesta)
+    ['hymns-list', 'jubilo-list', 'adoracion-list', 'kids-list'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('click', handleSongListClick);
+    });
+
+    let searchTimeout;
+    document.getElementById('song-list-search').addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => filterSongsList(e), 250);
+    });
+
     document.getElementById('profile-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         await saveProfile();
@@ -503,123 +523,87 @@ async function deleteSelectedSongs() {
     }
 }
 
-async function loadSongs() {
-    const hymnsList = document.getElementById('hymns-list');
-    const jubiloList = document.getElementById('jubilo-list');
-    const adoracionList = document.getElementById('adoracion-list');
-    document.getElementById('song-list-search').value = ''; 
+/**
+ * Manejador central de clics usando delegación.
+ * Evita crear miles de listeners individuales.
+ */
+function handleSongListClick(e) {
+    const item = e.target.closest('.list-group-item');
+    if (!item) return;
+    e.preventDefault();
     
-    // Skeleton Loaders Múltiples
-    showSkeletons(['hymns-list', 'jubilo-list', 'adoracion-list']);
+    const songId = item.dataset.songId;
+    const song = (state.allSongs || []).find(s => s.id === songId);
+    if (!song) return;
 
-    const { data: songs, error } = await supabase
-        .from('songs')
-        .select('*')
-        .order('titulo');
-
-    if (error) {
-        console.error(error);
-        hymnsList.innerHTML = 'Error cargando canciones.';
-        jubiloList.innerHTML = '';
-        adoracionList.innerHTML = '';
-        return;
+    if (isSelectionMode) {
+        const chk = item.querySelector('input[type="checkbox"]');
+        if (chk) chk.checked = !chk.checked;
+    } else {
+        openSong(song);
     }
+}
 
-    hymnsList.innerHTML = '';
-    jubiloList.innerHTML = '';
-    adoracionList.innerHTML = '';
+async function loadSongs() {
+    const containers = {
+        himno: document.getElementById('hymns-list'),
+        jubilo: document.getElementById('jubilo-list'),
+        adoracion: document.getElementById('adoracion-list'),
+        ninos: document.getElementById('kids-list')
+    };
 
-    let globalIdx = 0; // Para el animation-delay escalonado
+    showSkeletons(['hymns-list', 'jubilo-list', 'adoracion-list', 'kids-list']);
+    const { data: songs, error } = await supabase.from('songs').select('*').order('titulo');
+    if (error) return;
+
+    state.allSongs = songs; // Cachear para búsqueda rápida
+    renderSongLists(songs);
+}
+
+function renderSongLists(songs) {
+    // Creamos fragmentos para cada contenedor real en el HTML
+    const containerFrags = {
+        'hymns-list': document.createDocumentFragment(),
+        'jubilo-list': document.createDocumentFragment(),
+        'adoracion-list': document.createDocumentFragment(),
+        'kids-list': document.createDocumentFragment()
+    };
+
+    // Mapeo de tipo de canción al ID del contenedor
+    const typeToId = {
+        himno: 'hymns-list',
+        jubilo: 'jubilo-list',
+        adoracion: 'adoracion-list',
+        ofrenda: 'jubilo-list',
+        ninos: 'kids-list'
+    };
+
     songs.forEach(song => {
         const item = document.createElement('a');
-        item.className = 'list-group-item list-group-item-action d-flex align-items-center list-item-animate';
-        // Añadir retraso para escalerilla de hasta 15 elementos, para que no tarde demasiado si hay 100 canciones
-        item.style.animationDelay = `${Math.min(globalIdx * 0.03, 0.45)}s`;
+        item.className = 'list-group-item list-group-item-action d-flex align-items-center';
+        item.dataset.songId = song.id;
         item.href = '#';
-        
-        const checkboxHTML = `
-            <div class="form-check song-selection-checkbox me-3 d-none">
-                <input class="form-check-input" type="checkbox" value="${song.id}">
-            </div>
-        `;
 
-        let titleHTML;
-        if (song.tipo === 'himno') {
-            const hymnDisplay = song.autor ? `#${song.titulo} - ${song.autor}` : `#${song.titulo}`;
-            titleHTML = `<span class="fw-bold fs-6">${hymnDisplay}</span> <span class="badge bg-secondary float-end mt-1">${song.tono_original || '-'}</span>`;
-        } else {
-            titleHTML = `<span class="fw-semibold">${song.titulo}</span> <span class="badge bg-secondary float-end mt-1">${song.tono_original || '-'}</span>`;
-        }
-        item.innerHTML = checkboxHTML + `<div class="flex-grow-1 text-truncate pe-2">${titleHTML}</div>`;
+        const title = (song.tipo === 'himno') ? (song.autor ? `#${song.titulo} - ${song.autor}` : `#${song.titulo}`) : song.titulo;
+        item.innerHTML = `
+            <div class="form-check song-selection-checkbox me-3 d-none"><input class="form-check-input" type="checkbox" value="${song.id}"></div>
+            <div class="flex-grow-1 text-truncate pe-2">
+                <span class="${song.tipo === 'himno' ? 'fw-bold fs-6' : 'fw-semibold'}">${title}</span> 
+                <span class="badge bg-secondary float-end mt-1">${song.tono_original || '-'}</span>
+            </div>`;
 
-        const cleanLyrics = (song.letra_acordes || '').replace(/\[[^\]]*\]/g, ' ').replace(/\s+/g, ' ');
-        item.dataset.search = `${song.titulo} ${song.autor || ''} ${cleanLyrics}`.toLowerCase();
-
-        // Lógica de MANTENER PRESIONADO (Long Press) para seleccionar
-        let pressTimer;
-        let isLongPress = false;
-
-        const startPress = (e) => {
-            if (isSelectionMode) return;
-            isLongPress = false;
-            pressTimer = setTimeout(() => {
-                isLongPress = true;
-                if (!isSelectionMode) {
-                    toggleSelectionMode(true);
-                    // Seleccionar automáticamente al mantener presionado
-                    const chk = item.querySelector('input[type="checkbox"]');
-                    if (chk) chk.checked = true;
-                    // Proporcionar retroalimentación vibratoria si el dispositivo lo soporta
-                    if (navigator.vibrate) navigator.vibrate(50);
-                }
-            }, 600); // 600ms = Mantener presionado
-        };
-
-        const cancelPress = () => {
-            if (pressTimer) clearTimeout(pressTimer);
-        };
-
-        // Eventos táctiles y de mouse
-        item.addEventListener('touchstart', startPress, { passive: true });
-        item.addEventListener('touchend', cancelPress);
-        item.addEventListener('touchmove', cancelPress);
-        
-        item.addEventListener('mousedown', startPress);
-        item.addEventListener('mouseup', cancelPress);
-        item.addEventListener('mouseleave', cancelPress);
-
-        item.addEventListener('click', (e) => {
-            e.preventDefault();
-            // Si el click fue en realidad un "long press", ignoramos el click normal
-            if (isLongPress) {
-                isLongPress = false;
-                return;
-            }
-
-            if (isSelectionMode) {
-                const chk = e.currentTarget.querySelector('input[type="checkbox"]');
-                if (chk && e.target.type !== 'checkbox') {
-                    chk.checked = !chk.checked;
-                }
-            } else {
-                openSong(song);
-            }
-        });
-
-        if (song.tipo === 'himno') {
-            hymnsList.appendChild(item);
-        } else if (song.tipo === 'jubilo' || song.tipo === 'ofrenda') {
-            jubiloList.appendChild(item);
-        } else if (song.tipo === 'adoracion') {
-            adoracionList.appendChild(item);
-        } else {
-            jubiloList.appendChild(item);
-        }
-        globalIdx++;
+        const listId = typeToId[song.tipo] || 'jubilo-list';
+        const frag = containerFrags[listId];
+        frag.appendChild(item);
     });
-    
-    // Ordenar himnos numéricamente si es posible
-    sortListNumerically(hymnsList);
+
+    // Inyectamos cada fragmento en su respectiva lista una sola vez
+    for (const [id, frag] of Object.entries(containerFrags)) {
+        const el = document.getElementById(id);
+        if (el) { el.innerHTML = ''; el.appendChild(frag); }
+    }
+
+    sortListNumerically(document.getElementById('hymns-list'));
 }
 
 function sortListNumerically(listContainer) {
@@ -636,12 +620,13 @@ function sortListNumerically(listContainer) {
 
 function filterSongsList(e) {
     const term = e.target.value.toLowerCase().trim();
-    const items = document.querySelectorAll('#hymns-list a, #jubilo-list a, #adoracion-list a');
-    
-    items.forEach(item => {
-        const searchContent = item.dataset.search || item.textContent.toLowerCase();
-        item.classList.toggle('d-none', !searchContent.includes(term));
-    });
+    if (!state.allSongs) return;
+
+    const filtered = state.allSongs.filter(s => 
+        s.titulo.toLowerCase().includes(term) || 
+        (s.autor && s.autor.toLowerCase().includes(term))
+    );
+    renderSongLists(filtered);
 }
 
 
@@ -1407,6 +1392,8 @@ function populateSongSelect() {
         filteredSongs = allSongsForModal.filter(s => s.tipo === 'adoracion');
     } else if (section === 'OFRENDA') {
         filteredSongs = allSongsForModal.filter(s => s.tipo === 'jubilo' || s.tipo === 'ofrenda');
+    } else if (section === 'NIÑOS') {
+        filteredSongs = allSongsForModal.filter(s => s.tipo === 'ninos');
     } else {
         filteredSongs = allSongsForModal;
     }
@@ -1444,6 +1431,8 @@ function renderAutocompleteResults() {
         filteredSongs = allSongsForModal.filter(s => s.tipo === 'adoracion');
     } else if (section === 'OFRENDA') {
         filteredSongs = allSongsForModal.filter(s => s.tipo === 'jubilo' || s.tipo === 'ofrenda');
+    } else if (section === 'NIÑOS') {
+        filteredSongs = allSongsForModal.filter(s => s.tipo === 'ninos');
     } else {
         filteredSongs = allSongsForModal;
     }
@@ -1763,6 +1752,7 @@ async function handleBulkImport() {
 
             let importCount = 0;
             let skippedCount = 0;
+            const songsToInsert = [];
 
             for (const file of files) {
                 if (!file.name.endsWith('.txt')) continue;
@@ -1770,14 +1760,12 @@ async function handleBulkImport() {
                 const hymnNumber = file.name.replace(/\.txt$/, '').trim();
                 
                 let statusItem = document.createElement('li');
-                statusItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+                statusItem.className = 'list-group-item py-1 small';
                 statusItem.textContent = `Procesando: ${file.name}`;
                 statusList.appendChild(statusItem);
 
                 if (existingTitles.has(hymnNumber)) {
-                    statusItem.innerHTML = `Omitido (ya existe): ${file.name} <span class="badge bg-warning text-dark">Omitido</span>`;
                     skippedCount++;
-                    continue;
                 }
 
                 const content = await file.text();
@@ -1788,22 +1776,24 @@ async function handleBulkImport() {
                 hymnTitle = hymnTitle.replace(/^\d+\s*[\.-]?\s*/, '').trim();
                 const processedLyrics = convertChordsOverLyrics(content);
 
-                const { error: insertError } = await supabase.from('songs').insert([{
+                songsToInsert.push({
                     titulo: hymnNumber,      // El número del himno
                     autor: hymnTitle,       // El título real del himno
                     tipo: 'himno',
                     letra_acordes: processedLyrics,
                     created_by: userProfile.id
-                }]);
-
-                if (insertError) {
-                    statusItem.innerHTML = `Error importando ${file.name}: ${insertError.message} <span class="badge bg-danger">Error</span>`;
-                } else {
-                    statusItem.innerHTML = `${file.name} <span class="badge bg-success">Importado</span>`;
-                    importCount++;
-                }
+                });
             }
             
+            if (songsToInsert.length > 0) {
+                const { error: insertError } = await supabase.from('songs').insert(songsToInsert);
+                if (insertError) {
+                    showToast('Error en inserción masiva: ' + insertError.message, 'danger');
+                } else {
+                    importCount = songsToInsert.length;
+                }
+            }
+
             const summaryItem = document.createElement('li');
             summaryItem.className = 'list-group-item list-group-item-info';
             summaryItem.innerHTML = `<strong>Proceso finalizado.</strong> Importados: ${importCount}, Omitidos: ${skippedCount}.`;

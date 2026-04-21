@@ -87,7 +87,7 @@ async function exportRepertoireOffScreen(originalElement, filename) {
         .map(tag => tag.outerHTML).join('\n');
 
     const nightThemeStyles = isNight ? `
-        #repertoire-content { background: ${bgColor} !important; color: #f5f5f5 !important; }
+        #repertoire-content { background: linear-gradient(0deg, #000814 0%, #000000 100%) !important; color: #f5f5f5 !important; }
         #repertoire-content * { color: inherit; }
         .rep-header-main-title { color: #fafafa !important; }
         .rep-meta-value { color: #fafafa !important; }
@@ -134,7 +134,7 @@ async function exportRepertoireOffScreen(originalElement, filename) {
 
     try {
         const canvas = await html2canvas(clone, {
-            scale: 4, // Calidad ultra alta
+            scale: 2.5, // Reducido de 4 a 2.5 para evitar "Out of Memory" en móviles
             useCORS: true,
             allowTaint: true,
             logging: false,

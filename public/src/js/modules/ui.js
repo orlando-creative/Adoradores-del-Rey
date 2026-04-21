@@ -65,7 +65,9 @@ export function showView(viewId, pushToHistory = true) {
         if (botEl) botEl.classList.add('active');
     }
 
-    if (pushToHistory) {
+    // Evitar duplicar el mismo estado en el historial (Arregla el bug del botón atrás)
+    const currentState = history.state;
+    if (pushToHistory && (!currentState || currentState.viewId !== viewId)) {
         history.pushState({ viewId }, '', '#' + viewId.replace('view-', ''));
     }
 
