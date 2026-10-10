@@ -57,10 +57,15 @@
 
     --c-text:      #f0ede8;
     --c-text2:     #b8b5af;
-    --c-muted:     #6e6c67;
+    --c-muted:     #a09d96;
 
+    --c-primary:   #ff8a70;
+    --c-primary-h: #ffab98;
     --c-primary-bg:#2a1210;
     --c-primary-border: #5a1f1a;
+    --c-success:   #68b86e;
+    --c-danger:    #ff7777;
+    --c-info:      #66b9f0;
 
     --c-nav-bg:    rgba(18,17,15,0.85);
     --c-nav-border:rgba(255,255,255,0.1);
@@ -68,14 +73,18 @@
     
     --glass-bg: rgba(20, 20, 18, 0.75);
     --glass-border: rgba(255, 255, 255, 0.05);
+    color-scheme: dark;
 }
+[data-theme="dark"] .btn-primary { color: #25100d; }
 
 /* ── Reset & Base ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+* { -webkit-tap-highlight-color: transparent; }
 
 html {
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
     -webkit-text-size-adjust: 100%;
+    color-scheme: light;
 }
 body {
     font-family: 'Inter', system-ui, sans-serif;
@@ -102,26 +111,9 @@ img { max-width: 100%; display: block; }
 .d-none  { display: none !important; }
 .flex-grow-1 { flex-grow: 1; }
 .ms-auto { margin-left: auto !important; }
-/* ── Animations ── */
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes skeletonPulse {
-    0% { background-color: var(--c-border); opacity: 0.6; }
-    50% { background-color: var(--c-border2); opacity: 1; }
-    100% { background-color: var(--c-border); opacity: 0.6; }
-}
-
-.list-item-animate {
-    animation: fadeInUp 0.4s ease forwards;
-    opacity: 0;
-}
-
 .skeleton-box {
     background-color: var(--c-border);
-    animation: skeletonPulse 1.5s infinite ease-in-out;
+    opacity: .65;
 }
 
 /* ── Premium UI Elements ── */
@@ -757,6 +749,7 @@ nav.app-nav {
     line-height: 1.4;
     -webkit-tap-highlight-color: transparent;
 }
+.btn, .nav-item-link, .bottom-nav-item { touch-action: manipulation; }
 .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-m); }
 .btn:active { transform: translateY(0) scale(0.98); }
 
@@ -887,16 +880,6 @@ nav.app-nav {
 .list-group-item-action { cursor: pointer; display: block; text-decoration: none; }
 .list-group-item-action:hover { background: var(--c-surface2); }
 
-/* Staggered Animations for items loaded via AJAX */
-.list-item-animate {
-    opacity: 0;
-    transform: translateY(12px);
-    animation: fadeUpIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-@keyframes fadeUpIn {
-    to { opacity: 1; transform: translateY(0); }
-}
-
 /* Responsive Utils */
 .text-truncate {
     overflow: hidden;
@@ -973,8 +956,7 @@ nav.app-nav {
     opacity: 0;
     transition: opacity .2s ease;
 }
-.modal.show { display: flex !important; opacity: 1; animation: modalIn .2s ease forwards; }
-@keyframes modalIn { from {opacity:0} to {opacity:1} }
+.modal.show { display: flex !important; opacity: 1; }
 
 .modal-dialog { width: 100%; max-width: 640px; margin: auto; }
 .modal-dialog.modal-sm { max-width: 400px; }
@@ -989,11 +971,6 @@ nav.app-nav {
     border-radius: var(--r-xl);
     box-shadow: var(--shadow-xl);
     overflow: hidden;
-    animation: modalContentIn .3s cubic-bezier(0.34,1.56,0.64,1) forwards;
-}
-@keyframes modalContentIn {
-    from { opacity:0; transform: scale(.92) translateY(10px); }
-    to   { opacity:1; transform: scale(1) translateY(0); }
 }
 .modal-header { display: flex; align-items: center; gap: .75rem; padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--c-border); }
 .modal-title  { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1.1rem; color: var(--c-text); flex: 1; }
@@ -1035,10 +1012,8 @@ nav.app-nav {
     box-shadow: var(--shadow-m);
     z-index: 300;
     overflow: hidden;
-    animation: dropIn .15s ease;
     padding: .35rem;
 }
-@keyframes dropIn { from {opacity:0;transform:translateY(-6px)} to {opacity:1;transform:translateY(0)} }
 .dropdown-menu.show { display: block; }
 .dropdown-menu-end { right: 0; left: auto; }
 .dropdown-item {
@@ -1086,7 +1061,6 @@ nav.app-nav {
     align-items: center;
     gap: .75rem;
     pointer-events: all;
-    animation: toastIn .3s cubic-bezier(0.34,1.56,0.64,1);
     overflow: hidden;
 }
 .toast.bg-success { background: var(--c-success); color: #fff; }
@@ -1094,7 +1068,6 @@ nav.app-nav {
 .toast.bg-warning { background: #e65100; color: #fff; }
 .toast.bg-info    { background: var(--c-info);    color: #fff; }
 .toast.bg-primary { background: var(--c-primary); color: #fff; }
-@keyframes toastIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
 .toast-body { flex: 1; font-size: .9rem; font-weight: 500; }
 
 /* Compatibility for bootstrap toast API */
@@ -1112,16 +1085,6 @@ nav.app-nav {
     padding: 2.5rem !important;
 }
 .hero-section h1 { font-size: clamp(1.8rem, 5vw, 2.5rem); color: var(--c-primary); }
-
-/* ── Fade animation for views ── */
-.view-section {
-    animation: viewIn .25s ease-out forwards;
-}
-@keyframes viewIn { 
-    from { opacity: 0; } 
-    to { opacity: 1; } 
-}
-
 
 /* ── Song Tools Bar ── */
 .song-tools-bar {
@@ -1144,6 +1107,23 @@ nav.app-nav {
     font-size: .8rem;
     padding: .35rem .75rem;
     min-height: 34px;
+}
+
+.song-sequence-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    max-width: 900px;
+    margin: 0 auto 1rem;
+    padding: .5rem .75rem;
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    background: var(--c-surface);
+}
+.song-sequence-nav .btn:disabled {
+    opacity: .45;
+    cursor: not-allowed;
 }
 
 /* ── Repertoire Card ── */
@@ -1416,6 +1396,7 @@ nav.app-nav {
     padding-bottom: .4rem;
     letter-spacing: 2.5px;
     display: block;
+    text-align: left;
 }
 
 /* Song items */
@@ -1467,9 +1448,8 @@ nav.app-nav {
 /* ── Chord/Lyrics Display ── */
 .lyrics-container {
     font-family: 'Inter', 'Roboto', sans-serif !important;
-    font-size: 16.5px; /* Larger base font for lyrics */
-
-    line-height: 1;
+    font-size: 16.5px;
+    line-height: 1.4;
     background: var(--c-surface) !important;
     border: 1px solid var(--c-border) !important;
     border-radius: var(--r-lg) !important;
@@ -1482,21 +1462,31 @@ nav.app-nav {
 /* Fix alignment: use table-like display for chord+lyric stack */
 .line-wrapper {
     display: block;
-    margin-bottom: .5rem;
-    white-space: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
+    margin-bottom: .65rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
 }
-.line-wrapper::-webkit-scrollbar { display: none; }
+.line-wrapper.blank-line { min-height: 1.2em; }
+.line-wrapper.chord-only-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    column-gap: 1.25rem;
+    row-gap: .35rem;
+    white-space: normal;
+}
 
-.chord-word {
-    display: inline-flex !important;
-    flex-direction: column !important;
-    vertical-align: bottom !important;
-    margin-right: .1em;
+.chord-anchor {
+    display: inline-grid;
+    grid-template-rows: auto auto;
+    vertical-align: bottom;
+    align-items: start;
+    margin-right: 0;
     line-height: 1;
+    max-width: 100%;
 }
-.chord-word .chord {
+.chord-only-anchor { width: max-content; }
+.chord-anchor .chord {
     font-weight: 700 !important;
     color: #c0392b !important;
     font-size: 0.95em;
@@ -1504,18 +1494,19 @@ nav.app-nav {
     display: block;
 }
 
-.chord-word .lyrics {
+.chord-anchor .lyrics {
     font-weight: 400;
     color: var(--c-text) !important;
     font-size: 1em;
     line-height: 1.3;
     display: block;
-    white-space: pre;
+    white-space: pre-wrap;
 }
 .lyrics { /* standalone lyrics (no chord) */
     color: var(--c-text);
     font-size: 1em;
     line-height: 1.3;
+    white-space: pre-wrap;
 }
 .section-header {
     display: inline-block;
@@ -1533,10 +1524,26 @@ nav.app-nav {
 
 /* Lyrics-only mode */
 .lyrics-only .chord { display: none !important; }
-.lyrics-only .chord-word { display: inline !important; margin: 0 !important; }
+.lyrics-only .chord-anchor { display: inline !important; }
+.lyrics-only .line-wrapper {
+    margin-bottom: .2rem;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: break-word;
+}
+.lyrics-only .chord-anchor .lyrics {
+    display: inline !important;
+    white-space: normal;
+}
+.lyrics-only .section-header {
+    display: block;
+    width: fit-content;
+    margin: 1rem auto .5rem;
+    text-align: center;
+}
 
 /* Dark theme chord color */
-[data-theme="dark"] .chord-word .chord { color: #ff6b47 !important; }
+[data-theme="dark"] .chord-anchor .chord { color: #ff8a70 !important; }
 
 /* ── HR / Dividers ── */
 hr { border: none; border-top: 1px solid var(--c-border); margin: 1.5rem 0; }
@@ -1557,21 +1564,9 @@ hr { border: none; border-top: 1px solid var(--c-border); margin: 1.5rem 0; }
     animation: spin .65s linear infinite;
 }
 .spinner-border-sm { width: 1rem; height: 1rem; border-width: .15em; }
-@keyframes spin { to { transform: rotate(360deg); } }
 .text-secondary.spinner-border { color: var(--c-muted); }
 
 /* ── Theme toggle button in profile ── */
-.theme-switch-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: .75rem 1rem;
-    background: var(--c-surface2);
-    border: 1px solid var(--c-border);
-    border-radius: var(--r-md);
-    margin-bottom: 1rem;
-}
 .theme-switch { position: relative; display: inline-block; width: 48px; height: 26px; flex-shrink: 0; }
 .theme-switch input { opacity: 0; width: 0; height: 0; }
 .theme-slider {
@@ -1593,6 +1588,52 @@ hr { border: none; border-top: 1px solid var(--c-border); margin: 1.5rem 0; }
 }
 .theme-switch input:checked + .theme-slider { background: var(--c-primary); }
 .theme-switch input:checked + .theme-slider::before { transform: translateX(22px); }
+.theme-switch input:focus-visible + .theme-slider {
+    outline: 3px solid var(--c-primary);
+    outline-offset: 3px;
+}
+
+.settings-page { max-width: 760px; }
+.settings-heading { margin-bottom: 1.25rem; }
+.settings-card {
+    border-color: var(--c-border);
+    box-shadow: var(--shadow-s);
+}
+.settings-card .card-body { padding: 1.5rem; }
+.settings-card-heading {
+    display: flex;
+    align-items: center;
+    gap: .85rem;
+    margin-bottom: 1.25rem;
+}
+.settings-card-heading .card-title {
+    color: var(--c-text);
+    font-size: 1.05rem;
+}
+.settings-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 2.75rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: var(--r-md);
+    background: var(--c-primary-bg);
+    color: var(--c-primary);
+    font-size: 1.2rem;
+}
+.settings-preference-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    background: var(--c-surface2);
+}
+.settings-preference-row > div { min-width: 0; }
+#view-profile .form-label { color: var(--c-text2); }
+#view-profile .form-text { color: var(--c-muted); }
 
 /* ── Misc helpers ── */
 /* .no-export — visibility controlled by JS only, no CSS rules needed */
@@ -1602,7 +1643,7 @@ code { background: var(--c-surface2); padding: .1em .4em; border-radius: 4px; fo
 .song-selection-checkbox { display: none; }
 #view-songs.selection-mode .song-selection-checkbox { display: inline-flex !important; }
 
-/* ── View Transitions (Smooth fade in/out) ── */
+/* ── View visibility ── */
 .view-section {
     transition: none; /* Remove transition to prevent flickering */
 }
@@ -2104,11 +2145,6 @@ code { background: var(--c-surface2); padding: .1em .4em; border-radius: 4px; fo
 /* PROFESSIONAL APP STYLING ENHANCEMENTS
    ════════════════════════════════════════════════════════ */
 
-/* View Sections — Smooth transitions */
-.view-section {
-    animation: fadeInUp 0.35s ease-out;
-}
-
 /* Cards — Better elevation and interaction */
 .card, .recent-rep-item, .stat-card {
     border: 1px solid var(--c-border);
@@ -2212,11 +2248,6 @@ code { background: var(--c-surface2); padding: .1em .4em; border-radius: 4px; fo
     font-weight: 600;
 }
 
-/* Smooth scrolling */
-html {
-    scroll-behavior: smooth;
-}
-
 /* Active states for navigation */
 .nav-item-link.active {
     position: relative;
@@ -2239,14 +2270,72 @@ html {
     padding: 1rem;
 }
 
-/* Utility transitions */
-.fade-in {
-    animation: fadeInUp 0.4s ease-out;
-}
-
 /* Better active states on touch */
 @media (hover: none) {
     .btn:active {
         background: var(--c-primary-h) !important;
+    }
+}
+
+/* Remove decorative motion while preserving action feedback and loading spinners. */
+.view-section,
+.skeleton-box,
+.modal.show,
+.modal-content,
+.dropdown-menu,
+.toast,
+.card,
+.recent-rep-item,
+.stat-card,
+.repertoire-card,
+.btn,
+.form-control,
+.form-select,
+.list-group-item,
+.rep-song-item,
+.dropdown-item,
+.badge,
+#song-list-search,
+.nav-tabs .nav-link {
+    animation: none !important;
+    transition: none !important;
+    will-change: auto;
+}
+.skeleton-box { opacity: .65; }
+.list-group-item:hover,
+.repertoire-card:hover,
+.card:hover { transform: none; }
+
+/* Settings and song-reading controls use the active theme tokens. */
+#view-profile .card {
+    border-color: var(--c-border) !important;
+    box-shadow: var(--shadow-s) !important;
+}
+#view-profile .settings-preference-row {
+    background: var(--c-surface2) !important;
+    border-color: var(--c-border) !important;
+}
+[data-theme="dark"] .song-tools-bar,
+[data-theme="dark"] .song-sequence-nav,
+[data-theme="dark"] .lyrics-container {
+    background-color: var(--c-surface) !important;
+    color: var(--c-text) !important;
+    border-color: var(--c-border) !important;
+}
+[data-theme="dark"] #rep-theme-select {
+    background-color: var(--c-surface) !important;
+    color: var(--c-text) !important;
+    border-color: var(--c-border2) !important;
+}
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select {
+    color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
     }
 }

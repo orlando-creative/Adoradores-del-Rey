@@ -1,9 +1,47 @@
 import { showToast } from './ui.js';
 
+let html2canvasPromise;
+
+function loadHtml2Canvas() {
+    if (typeof window.html2canvas === 'function') {
+        return Promise.resolve(window.html2canvas);
+    }
+
+    if (!html2canvasPromise) {
+        html2canvasPromise = new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://html2canvas.hertzen.com/dist/html2canvas.min.js';
+            script.async = true;
+            script.onload = () => {
+                if (typeof window.html2canvas !== 'function') {
+                    html2canvasPromise = null;
+                    reject(new Error('html2canvas no está disponible después de cargar el script.'));
+                    return;
+                }
+                resolve(window.html2canvas);
+            };
+            script.onerror = () => {
+                html2canvasPromise = null;
+                reject(new Error('No se pudo cargar html2canvas.'));
+            };
+            document.head.appendChild(script);
+        });
+    }
+
+    return html2canvasPromise;
+}
+
 export async function exportElementAsPNG(element, filename, options = {}) {
     // Si estamos exportando el Repertorio, usamos Off-Screen Rendering
     if (element.id === 'repertoire-content') {
-        return await exportRepertoireOffScreen(element, filename);
+        try {
+            const renderer = await loadHtml2Canvas();
+            return await exportRepertoireOffScreen(element, filename, renderer);
+        } catch (error) {
+            console.error('Error cargando html2canvas:', error);
+            showToast('No se pudo cargar la herramienta de exportación.', 'danger');
+            return;
+        }
     }
 
     // Para canciones — ocultar elementos que no deben aparecer en export
@@ -22,7 +60,8 @@ export async function exportElementAsPNG(element, filename, options = {}) {
     const textColor = isDarkTheme ? '#fafafa' : '#000000';
 
     try {
-        const canvas = await html2canvas(element, {
+        const renderer = await loadHtml2Canvas();
+        const canvas = await renderer(element, {
             backgroundColor: bgColor,
             scale: 3,
             useCORS: true,
@@ -46,7 +85,7 @@ export async function exportElementAsPNG(element, filename, options = {}) {
     }
 }
 
-async function exportRepertoireOffScreen(originalElement, filename) {
+async function exportRepertoireOffScreen(originalElement, filename, renderer) {
     showToast('Generando imagen de alta calidad...', 'info');
     
     // Detectar tema
@@ -133,7 +172,7 @@ async function exportRepertoireOffScreen(originalElement, filename) {
     await iframe.contentWindow.document.fonts.ready;
 
     try {
-        const canvas = await html2canvas(clone, {
+        const canvas = await renderer(clone, {
             scale: 2.5, // Reducido de 4 a 2.5 para evitar "Out of Memory" en móviles
             useCORS: true,
             allowTaint: true,
@@ -168,7 +207,7 @@ async function exportRepertoireOffScreen(originalElement, filename) {
             document.body.appendChild(fallbackClone);
             await new Promise(resolve => setTimeout(resolve, 100));
             
-            const fallbackCanvas = await html2canvas(fallbackClone, {
+            const fallbackCanvas = await renderer(fallbackClone, {
                 scale: 2.5,
                 useCORS: true,
                 allowTaint: true,

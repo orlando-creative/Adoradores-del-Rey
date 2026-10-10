@@ -1,0 +1,300 @@
+DOCUMENTACION CORTA PARA IA: MIGRACION A APP MOVIL
+=================================================================
+
+RESUMEN EJECUTIVO
+-----------------------------------------------------------------
+Adoradores del Rey es un sistema web de gestión musical para iglesia con foco en:
+- catálogo de canciones
+- repertorios de servicio
+- lectura de letras con acordes
+- transposición de tonalidades
+- visualización móvil para uso en reuniones
+- administración de perfiles y roles
+
+Actualmente está implementado como PWA web con HTML/CSS/JS y Supabase como backend. El sistema ya tiene una base clara de negocio y de datos, por lo que es muy apropiado para migrarlo a React Native/Expo, Flutter o Capacitor manteniendo la misma lógica.
+
+OBJETIVO DE LA MIGRACION
+-----------------------------------------------------------------
+Convertir esta app web en una app móvil nativa o híbrida con:
+- autenticación
+- navegación por pantallas
+- listado y detalle de canciones
+- gestión de repertorios
+- edición de contenido musical
+- transposición de acordes
+- exportación visual
+- uso en dispositivos móviles con buena experiencia de lectura
+
+ARQUITECTURA ACTUAL (ENTENDIDA)
+-----------------------------------------------------------------
+Front-end web:
+- public/index.html: pantalla principal de la app
+- public/src/js/app.js: lógica principal
+- public/src/js/modules/: modularización parcial
+- public/src/js/auth.js: autenticación
+- public/src/js/services/supabaseClient.js: conexión a Supabase
+- public/src/js/chords-render.js: render de letras con acordes
+- public/src/js/transpose.js: transposición
+
+Backend:
+- Supabase + PostgreSQL
+- Auth para usuarios
+- Base de datos con perfiles, canciones y repertorios
+
+Funcionalidad clave:
+- Login/registro
+- Vista de inicio con estadísticas
+- Lista de canciones agrupadas por tipo
+- Detalle de canción con herramienta de lectura
+- Repertorio con canciones por sección
+- Edición de repertorio y reordenamiento
+- Importación de textos y TXT masivos
+- Exportación de contenido a PNG
+
+ARQUITECTURA TARGET (RECOMENDADA)
+-----------------------------------------------------------------
+Opción recomendada:
+- React Native + Expo + Supabase
+
+Estructura sugerida:
+app/
+├── src/
+│   ├── api/
+│   │   └── supabase.ts
+│   ├── auth/
+│   │   ├── loginScreen.tsx
+│   │   ├── registerScreen.tsx
+│   │   └── authService.ts
+│   ├── screens/
+│   │   ├── HomeScreen.tsx
+│   │   ├── SongsScreen.tsx
+│   │   ├── SongDetailScreen.tsx
+│   │   ├── RepertoiresScreen.tsx
+│   │   ├── RepertoireDetailScreen.tsx
+│   │   └── ProfileScreen.tsx
+│   ├── components/
+│   │   ├── SongListItem.tsx
+│   │   ├── RepertoireCard.tsx
+│   │   ├── LyricViewer.tsx
+│   │   ├── TransposeControls.tsx
+│   │   └── LoadingSkeleton.tsx
+│   ├── hooks/
+│   │   ├── useSongs.ts
+│   │   ├── useRepertoires.ts
+│   │   └── useProfile.ts
+│   ├── stores/
+│   │   └── appStore.ts
+│   ├── types/
+│   │   └── models.ts
+│   └── utils/
+│       ├── chordUtils.ts
+│       ├── transpose.ts
+│       └── formatters.ts
+
+MODELO DE DATOS (MANTENER EQUIVALENTE)
+-----------------------------------------------------------------
+profiles
+- id
+- nombre
+- rol
+- created_at
+
+songs
+- id
+- titulo
+- autor
+- tono_original
+- tipo
+- youtube_url
+- letra_acordes
+- created_by
+- created_at
+
+repertoires
+- id
+- titulo
+- fecha
+- hora
+- director
+- uniforme
+- coristas
+- teclado
+- guitarra
+- bateria
+- bajo
+- tema
+- created_by
+
+repertoire_songs
+- id
+- repertoire_id
+- song_id
+- orden
+- section
+- tono
+
+MAPPING DE PANTALLAS
+-----------------------------------------------------------------
+Web actual -> App móvil sugerida
+
+1. Login / Register
+- LoginScreen / RegisterScreen
+
+2. Home Dashboard
+- HomeScreen
+- Muestra contador de canciones y repertorios
+- Repertorios recientes
+- Accesos rápidos
+
+3. Canciones
+- SongsScreen
+- Tabs: Himnos, Júbilo, Adoración, Niños
+- Lista ordenada por título o número
+- Búsqueda por texto
+
+4. Detalle de Canción
+- SongDetailScreen
+- Render de letra + acordes
+- Botones: transponer, aumentar letra, ocultar acordes, auto-scroll
+- Exportar PNG / compartir
+- Video YouTube opcional
+
+5. Repertorios
+- RepertoiresScreen
+- Tarjetas de repertorio con fecha y hora
+
+6. Detalle de Repertorio
+- RepertoireDetailScreen
+- Mostrar sección, orden, músicos y canciones
+- Cambiar tono por canción
+- Reordenar canciones
+- Agregar/eliminar canciones
+
+7. Perfil
+- ProfileScreen
+- nombre, email, rol, cambiar contraseña
+
+8. Modal / flujo de crear editar
+- BottomSheet / FormScreen
+- Crear/editar canción y repertorio
+
+FUNCIONALIDADES CLAVE QUE SE DEBEN MANTENER
+-----------------------------------------------------------------
+- Autenticación con Supabase Auth
+- Gestión de canciones
+- Gestión de repertorios
+- Agrupación por sección y tipo
+- Modo lectura de letras
+- Autoscroll
+- Transposición musical
+- Soporte de YouTube opcional
+- Tema visual por repertorio
+- Importación TXT y conversión de acordes
+- Reordenamiento de canciones dentro de repertorio
+- Roles admin/user
+
+RECOMENDACION DE STACK MOVIL
+-----------------------------------------------------------------
+Opción principal:
+- React Native + Expo
+- Supabase para auth + base de datos
+- Zustand o Redux Toolkit para estado global
+- React Navigation para pantallas
+- Expo Router opcional
+- react-native-svg o render nativo para acordes
+- react-native-share / expo-sharing para compartir
+- expo-print / react-native-view-shot para exportar imagen
+
+Alternativa:
+- Flutter + Supabase
+- Riverpod/Provider
+- go_router
+- share_plus
+- screenshot
+
+SELECCION RECOMENDADA
+-----------------------------------------------------------------
+Para este proyecto, lo más práctico es:
+- React Native + Expo + Supabase
+Porque el sistema ya está basado en web, la migración es más rápida y el trabajo con formularios, listas, navegación y componentes es muy natural.
+
+PLAN DE MIGRACION PASO A PASO
+-----------------------------------------------------------------
+Paso 1: Preparar backend y Supabase
+- Confirmar URL y anon key reales
+- Revisar schema.sql y policies.sql
+- Verificar roles y relaciones
+
+Paso 2: Crear estructura base de app móvil
+- splash/login, tabs, home, songs, repertoires
+- crear modelos TypeScript
+- inicializar Supabase client
+
+Paso 3: Migrar autenticación
+- login
+- registro
+- perfil fetch
+- logout
+- manejo de roles
+
+Paso 4: Migrar catálogo de canciones
+- fetchSongs
+- filtros por tipo
+- búsquedas
+- renderizado de listas
+- detalle de canción
+
+Paso 5: Migrar lógica musical
+- parser de letras con acordes
+- render de acordes en pantalla
+- transposición
+- modo solo letra
+- auto-scroll
+- aumento de fuente
+
+Paso 6: Migrar repertorios
+- crear repertorio
+- listar repertorios
+- detalle y edición
+- añadir canciones
+- ordenar canciones por sección
+- cambiar tono por canción
+
+Paso 7: Migrar importación y exportación
+- import TXT
+- conversion chord/lyric
+- export PNG / compartir
+
+Paso 8: Diseño móvil y UX
+- bottom tabs
+- cards amigables
+- dark mode
+- gestos, botones grandes, touch-friendly
+
+Paso 9: Validación funcional
+- login/registro
+- crear/editar canción
+- crear repertorio
+- abrir detalle, transponer, auto-scroll
+- guardar perfil y cambiar contraseña
+
+Paso 10: Pruebas y QA
+- flujo real de culto/reunión
+- datos reales en Supabase
+- resolucion de edge cases
+
+HALLAZGOS CLAVE PARA LA IA
+-----------------------------------------------------------------
+- app.js es el centro funcional del sistema, pero está muy acoplado.
+- La lógica de negocio es clara y separable por dominios.
+- Las entidades principales ya están definidas.
+- Los datos están bien estructurados para backend centralizado.
+- La parte más compleja es la lectura musical y la transposición, no la base de datos.
+- El sistema está listo para migrarse manteniendo la misma fuente de verdad en Supabase.
+
+RESUMEN FINAL
+-----------------------------------------------------------------
+La app ya define claramente sus entidades, reglas y flujos. Lo principal no es reconstruir la lógica desde cero, sino migrar la arquitectura, separar los dominios y adaptar la experiencia al móvil sin perder la funcionalidad musical del sistema. La mejor base para esta migración es React Native + Expo + Supabase, conservando el mismo modelo de datos y flujos de negocio que ya existen en este proyecto.
+
+ESTE ARCHIVO FUE GENERADO PARA SERVIR COMO CONTEXTO DIRECTO PARA UNA IA QUE VAYA A CONVERTIR EL SISTEMA EN APLICACION MOVIL.
+=================================================================

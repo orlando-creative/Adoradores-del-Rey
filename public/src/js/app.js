@@ -3,65 +3,12 @@ import { getCurrentProfile, logout } from './auth.js';
 import { renderSong } from './chords-render.js';
 import { scales } from './transpose.js';
 import { state } from './modules/state.js';
-import { showToast, showView, toggleLoading, showSkeletons, showCardSkeletons, closeNavbar, changeFontSize, toggleAutoScroll, startScrollInterval, stopAutoScroll, toggleLyricsOnly, initModalNavbarHandlers } from './modules/ui.js';
+import { showToast, showView, toggleLoading, showSkeletons, showCardSkeletons, closeNavbar, changeFontSize, toggleLyricsOnly, initModalNavbarHandlers } from './modules/ui.js';
 import { exportElementAsPNG } from './modules/export.js';
 import { initDragToDismiss } from './modules/dragToDismiss.js';
 
 // Usaremos "state" como contenedor de variables globales para migrar a poco a módulos
 // state.currentSong; state.currentRepertoire; etc.
-
-// Inyectar estilos para modo "Solo Letra" y Himnos
-const lyricsStyles = document.createElement('style');
-lyricsStyles.textContent = `
-    .lyrics-only .line-wrapper {
-        text-align: center !important;
-        margin-bottom: 0.2rem !important;
-        display: block !important;
-        white-space: normal !important;
-        overflow-wrap: break-word !important;
-    }
-    /* Botones sin sombras en el detalle */
-    .song-tools-bar button {
-        box-shadow: none !important;
-    }
-    .lyrics-only .section-header {
-        text-align: center !important;
-        font-family: 'Roboto', 'Segoe UI', sans-serif !important;
-        font-size: 1.4em !important;
-        font-weight: normal !important;
-        margin-top: 1rem !important;
-        margin-bottom: 0.5rem !important;
-    }
-    .lyrics-only .chord {
-        display: none !important;
-    }
-    .lyrics-only .lyrics {
-        font-family: 'Roboto', 'Segoe UI', sans-serif !important;
-        font-size: 1.3rem !important;
-        color: #000000 !important;
-        line-height: 1.4;
-        font-weight: 400 !important;
-    }
-    .lyrics-only .chorus-line .lyrics {
-        font-weight: 700 !important;
-    }
-    .lyrics-only .chord-word {
-        display: inline !important;
-        margin: 0 2px !important;
-    }
-    .lyrics-only .chord-word .lyrics {
-        display: inline;
-    }
-    .lyrics {
-        font-family: 'Roboto', 'Segoe UI', sans-serif;
-    }
-    /* Asegurar que el degradado se vea bien en el contenedor */
-    #repertoire-content.theme-night {
-        background: linear-gradient(to top, #000814 0%, #000000 100%) !important;
-        color: #f5f5f5 !important;
-    }
-`;
-document.head.appendChild(lyricsStyles);
 
 // Migrados a module state.js, además mantenemos las variables locales para evitar romper código legacy no migrado aún.
 let currentSong = null;
@@ -75,11 +22,10 @@ let addSongModal = null;
 let transposeModal = null;
 let importModal = null;
 let allSongsForModal = [];
-let currentFontSize = 15;
 let isSelectionMode = false;
-let scrollInterval = null;
-let scrollSpeedMs = 50;
 let returnToView = 'view-songs';
+let currentSongSequence = [];
+let currentSongSequenceIndex = -1;
 
 state.currentSong = currentSong;
 state.currentRepertoire = currentRepertoire;
@@ -196,16 +142,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('btn-font-plus').addEventListener('click', () => changeFontSize(2));
     document.getElementById('btn-font-minus').addEventListener('click', () => changeFontSize(-2));
     document.getElementById('btn-toggle-lyrics').addEventListener('click', toggleLyricsOnly);
-    document.getElementById('btn-auto-scroll').addEventListener('click', toggleAutoScroll);
-    
-    document.getElementById('scroll-speed-range').addEventListener('input', (e) => {
-        const val = parseInt(e.target.value);
-        // Mapeo: 0 (Lento/200ms) -> 100 (Rápido/5ms)
-        scrollSpeedMs = Math.floor(200 - (val * 1.95));
-        if (scrollSpeedMs < 5) scrollSpeedMs = 5;
-        
-        if (scrollInterval) startScrollInterval();
-    });
+    document.getElementById('btn-song-previous').addEventListener('click', () => navigateRepertoireSong(-1));
+    document.getElementById('btn-song-next').addEventListener('click', () => navigateRepertoireSong(1));
 
     // 4. Exportar PNG
     document.getElementById('export-png').addEventListener('click', () => {
@@ -227,6 +165,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('btn-edit-song').addEventListener('click', () => openModal(currentSong));
     document.getElementById('btn-save-song').addEventListener('click', saveSong);
     document.getElementById('btn-delete-song').addEventListener('click', deleteSong);
+    initReadingControlsVisibility();
 
     document.getElementById('btn-add-repertoire').addEventListener('click', () => openRepertoireModal());
     document.getElementById('btn-save-repertoire').addEventListener('click', saveRepertoire);
@@ -397,28 +336,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Mantener la base de datos activa en el plan gratuito de Supabase
-    setInterval(keepDatabaseAwake, 300000); // Ping cada 5 minutos
-
     // Mostrar vista de home inicialmente
     await loadHomeData();
     showView('view-home');
 });
-
-/**
- * Realiza una consulta ligera a la base de datos para evitar que Supabase
- * pause el proyecto en el plan gratuito por inactividad.
- */
-function keepDatabaseAwake() {
-    supabase.from('profiles').select('id', { count: 'exact', head: true }).then(({ error }) => {
-        if (error) {
-            console.warn('Ping a la base de datos falló:', error.message);
-        } else {
-            // No es necesario mostrar esto en producción, pero es útil para depurar.
-            // console.log('Ping a la base de datos exitoso para mantenerla activa.');
-        }
-    });
-}
 
 async function loadProfileView() {
     const { data: { user } } = await supabase.auth.getUser();
@@ -540,6 +461,8 @@ function handleSongListClick(e) {
         const chk = item.querySelector('input[type="checkbox"]');
         if (chk) chk.checked = !chk.checked;
     } else {
+        currentSongSequence = [];
+        currentSongSequenceIndex = -1;
         openSong(song);
     }
 }
@@ -554,7 +477,10 @@ async function loadSongs() {
 
     showSkeletons(['hymns-list', 'jubilo-list', 'adoracion-list', 'kids-list']);
     const { data: songs, error } = await supabase.from('songs').select('*').order('titulo');
-    if (error) return;
+    if (error) {
+        showToast('Error cargando canciones: ' + error.message, 'danger');
+        return;
+    }
 
     state.allSongs = songs; // Cachear para búsqueda rápida
     renderSongLists(songs);
@@ -635,9 +561,9 @@ function openSong(song, targetKey = null, fromView = 'view-songs') {
     returnToView = fromView;
     
     // Reset View State
-    currentFontSize = 15; // Tamaño ideal para legibilidad
+    state.currentFontSize = 15;
     updateFontSize();
-    stopAutoScroll();
+    updateSongSequenceNavigation();
     
     // Configurar modo solo letra (automático para himnos)
     const lyricsContainer = document.getElementById('song-lyrics');
@@ -658,15 +584,19 @@ function openSong(song, targetKey = null, fromView = 'view-songs') {
     
     // YouTube Logic
     const ytContainer = document.getElementById('youtube-container');
-    if (song.youtube_url) {
-        const videoId = getYoutubeId(song.youtube_url);
-        if (videoId) {
-            ytContainer.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-            ytContainer.classList.remove('d-none');
-        }
+    const videoId = getYoutubeId(song.youtube_url || '');
+    ytContainer.innerHTML = '';
+    if (videoId) {
+        const iframe = document.createElement('iframe');
+        iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}`;
+        iframe.title = `Video de ${song.titulo || 'la canción'}`;
+        iframe.loading = 'lazy';
+        iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+        iframe.allowFullscreen = true;
+        ytContainer.appendChild(iframe);
+        ytContainer.classList.remove('d-none');
     } else {
         ytContainer.classList.add('d-none');
-        ytContainer.innerHTML = '';
     }
 
     // Lógica de Tonalidad (Si viene con un tono específico)
@@ -786,12 +716,62 @@ function setTranspositionByTarget(targetRoot, targetSuffix) {
 
 // Funciones UI como changeFontSize, autoScroll desactivadas aquí
 function updateFontSize() {
-    document.getElementById('song-lyrics').style.fontSize = `${state.currentFontSize || currentFontSize}px`;
+    document.getElementById('song-lyrics').style.fontSize = `${state.currentFontSize}px`;
 }
 
 function renderCurrentSong() {
     const container = document.getElementById('song-lyrics');
     container.innerHTML = renderSong(currentSong.letra_acordes, currentSemitones);
+}
+
+function updateSongSequenceNavigation() {
+    const navigation = document.getElementById('song-sequence-nav');
+    const canNavigate = returnToView === 'view-repertoire-detail'
+        && currentSongSequence.length > 1
+        && currentSongSequenceIndex >= 0;
+    document.body.classList.toggle('has-song-sequence', canNavigate);
+    navigation.classList.toggle('d-none', !canNavigate);
+    if (!canNavigate) return;
+
+    document.getElementById('song-sequence-position').textContent =
+        `${currentSongSequenceIndex + 1} de ${currentSongSequence.length}`;
+    document.getElementById('btn-song-previous').disabled = currentSongSequenceIndex === 0;
+    document.getElementById('btn-song-next').disabled =
+        currentSongSequenceIndex === currentSongSequence.length - 1;
+}
+
+function navigateRepertoireSong(direction) {
+    const nextIndex = currentSongSequenceIndex + direction;
+    if (nextIndex < 0 || nextIndex >= currentSongSequence.length) return;
+
+    currentSongSequenceIndex = nextIndex;
+    const item = currentSongSequence[nextIndex];
+    openSong(item.songs, item.tono || item.songs.tono_original, 'view-repertoire-detail');
+}
+
+function initReadingControlsVisibility() {
+    let previousScrollY = window.scrollY;
+    let updateScheduled = false;
+
+    window.addEventListener('scroll', () => {
+        if (updateScheduled) return;
+        updateScheduled = true;
+        window.requestAnimationFrame(() => {
+            const currentScrollY = window.scrollY;
+            const isReadingView = document.getElementById('view-song-detail')?.classList.contains('d-none') === false;
+
+            if (!isReadingView || currentScrollY <= 8) {
+                document.body.classList.remove('reading-controls-hidden');
+            } else if (currentScrollY > previousScrollY + 4) {
+                document.body.classList.add('reading-controls-hidden');
+            } else if (currentScrollY < previousScrollY - 4) {
+                document.body.classList.remove('reading-controls-hidden');
+            }
+
+            previousScrollY = currentScrollY;
+            updateScheduled = false;
+        });
+    }, { passive: true });
 }
 
 function openModal(song = null) {
@@ -815,18 +795,21 @@ function openModal(song = null) {
     
     // Reset validation styles
     document.getElementById('song-key').classList.remove('is-invalid');
+    document.getElementById('song-youtube').classList.remove('is-invalid');
     toggleYoutubeInput();
     songModal.show();
 }
 
 function toggleYoutubeInput() {
-    const type = document.getElementById('song-type').value;
     const divYoutube = document.getElementById('div-youtube-input');
-    if (type === 'himno') {
-        divYoutube.classList.add('d-none');
-    } else {
-        divYoutube.classList.remove('d-none');
-    }
+    const isHymn = document.getElementById('song-type').value === 'himno';
+    document.querySelector('label[for="song-youtube"]').textContent = isHymn
+        ? 'Video del himno (YouTube, opcional)'
+        : 'Video de YouTube (opcional)';
+    document.getElementById('song-youtube').placeholder = isHymn
+        ? 'Pega aquí el enlace del video del himno'
+        : 'https://www.youtube.com/watch?v=...';
+    divYoutube.classList.remove('d-none');
 }
 
 function isValidKey(key) {
@@ -840,6 +823,15 @@ async function saveSong() {
     const id = document.getElementById('song-id').value;
     const key = document.getElementById('song-key').value.trim();
     const type = document.getElementById('song-type').value;
+    const title = document.getElementById('song-title').value.trim();
+    const youtubeInput = document.getElementById('song-youtube');
+    const videoUrl = youtubeInput.value.trim();
+
+    if (!title) {
+        showToast('El título de la canción es requerido.', 'warning');
+        document.getElementById('song-title').focus();
+        return;
+    }
     
     // Validación de Tonalidad
     if (!isValidKey(key)) {
@@ -849,12 +841,27 @@ async function saveSong() {
         document.getElementById('song-key').classList.remove('is-invalid');
     }
 
+    let isValidVideoUrl = true;
+    if (videoUrl) {
+        try {
+            isValidVideoUrl = ['http:', 'https:'].includes(new URL(videoUrl).protocol);
+        } catch {
+            isValidVideoUrl = false;
+        }
+    }
+    if (videoUrl && (!youtubeInput.validity.valid || !isValidVideoUrl || !getYoutubeId(videoUrl))) {
+        youtubeInput.classList.add('is-invalid');
+        showToast('Ingresa una URL válida de YouTube.', 'warning');
+        return;
+    }
+    youtubeInput.classList.remove('is-invalid');
+
     const songData = {
-        titulo: document.getElementById('song-title').value,
-        autor: document.getElementById('song-author').value,
+        titulo: title,
+        autor: document.getElementById('song-author').value.trim(),
         tono_original: key,
         tipo: type,
-        youtube_url: (type === 'himno') ? '' : document.getElementById('song-youtube').value,
+        youtube_url: videoUrl,
         letra_acordes: document.getElementById('song-lyrics-input').value,
         created_by: userProfile.id
     };
@@ -889,7 +896,9 @@ async function saveSong() {
                 showView('view-songs'); // Volver a la lista si hay error
             } else if (updatedSong && currentSong && currentSong.id == id) {
                 // Si seguimos en la vista de detalle de esa canción, la actualizamos
-                openSong(updatedSong);
+                const sequenceItem = currentSongSequence[currentSongSequenceIndex];
+                const targetKey = sequenceItem?.songs?.id === updatedSong.id ? sequenceItem.tono : null;
+                openSong(updatedSong, targetKey, returnToView);
             }
         }
     }
@@ -927,10 +936,9 @@ async function loadRepertoires() {
     }
 
     listContainer.innerHTML = '';
-    repertoires.forEach((rep, idx) => {
+    repertoires.forEach(rep => {
         const col = document.createElement('div');
-        col.className = 'col-md-4 col-sm-6 list-item-animate';
-        col.style.animationDelay = `${Math.min(idx * 0.05, 0.5)}s`;
+        col.className = 'col-md-4 col-sm-6';
         
         col.innerHTML = `
             <div class="card repertoire-card h-100 shadow-sm border-0" style="border-top: 4px solid var(--c-primary) !important;">
@@ -1009,25 +1017,22 @@ async function openRepertoire(rep) {
 }
 
 async function loadHomeData() {
-    // Cargar estadísticas y repertorios recientes
-    const { data: songs, error: songsError } = await supabase
-        .from('songs')
-        .select('tipo', { count: 'exact' })
-        .in('tipo', ['jubilo', 'adoracion']);
-
-    const { data: repertoires, error: repsError } = await supabase
-        .from('repertoires')
-        .select('*')
-        .order('fecha', { ascending: false })
-        .limit(5);
+    const [
+        { count: songCount, error: songsError },
+        { data: repertoires, count: repertoireCount, error: repsError }
+    ] = await Promise.all([
+        supabase.from('songs').select('id', { count: 'exact', head: true }),
+        supabase.from('repertoires').select('*', { count: 'exact' })
+            .order('fecha', { ascending: false }).limit(5)
+    ]);
 
     // Actualizar contadores
-    if (!songsError && songs) {
-        document.getElementById('stat-songs-count').textContent = songs.length;
+    if (!songsError) {
+        document.getElementById('stat-songs-count').textContent = songCount ?? 0;
     }
     
     if (!repsError && repertoires) {
-        document.getElementById('stat-repertoires-count').textContent = repertoires.length;
+        document.getElementById('stat-repertoires-count').textContent = repertoireCount ?? 0;
         
         // Renderizar repertorios recientes
         const container = document.getElementById('recent-repertoires');
@@ -1066,7 +1071,7 @@ async function loadHomeData() {
 
 async function loadRepertoireSongs(repId) {
     const list = document.getElementById('rep-songs-list');
-    list.innerHTML = '<div class="text-center py-4 fade-in"><div class="modern-loader modern-loader-sm"></div></div>';
+    list.innerHTML = '<div class="text-center py-4"><div class="modern-loader modern-loader-sm"></div></div>';
 
     const { data, error } = await supabase
         .from('repertoire_songs')
@@ -1106,6 +1111,9 @@ async function loadRepertoireSongs(repId) {
         if (idxB === -1) return -1;
         return idxA - idxB;
     });
+    currentSongSequence = sortedKeys.flatMap(sectionName => sections[sectionName])
+        .filter(item => item.songs);
+    currentSongSequenceIndex = -1;
 
     // Renderizar por sección
     let songIndex = 1;
@@ -1164,7 +1172,10 @@ async function loadRepertoireSongs(repId) {
                 li.appendChild(btn);
             }
             li.style.cursor = 'pointer';
-            li.onclick = () => openSong(item.songs, item.tono || item.songs.tono_original, 'view-repertoire-detail');
+            li.onclick = () => {
+                currentSongSequenceIndex = currentSongSequence.indexOf(item);
+                openSong(item.songs, item.tono || item.songs.tono_original, 'view-repertoire-detail');
+            };
             list.appendChild(li);
             songIndex++;
         });
@@ -1583,9 +1594,22 @@ async function populateMusicianSelectors() {
 }
 
 function getYoutubeId(url) {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
+    try {
+        const parsedUrl = new URL(url);
+        const host = parsedUrl.hostname.replace(/^www\./, '').toLowerCase();
+        if (host === 'youtu.be') {
+            return /^[\w-]{11}$/.test(parsedUrl.pathname.slice(1))
+                ? parsedUrl.pathname.slice(1)
+                : null;
+        }
+        if (!['youtube.com', 'm.youtube.com', 'music.youtube.com', 'youtube-nocookie.com'].includes(host)) return null;
+
+        const videoId = parsedUrl.searchParams.get('v')
+            || parsedUrl.pathname.match(/^\/(?:embed|shorts|live|v)\/([\w-]{11})/)?.[1];
+        return videoId && /^[\w-]{11}$/.test(videoId) ? videoId : null;
+    } catch {
+        return null;
+    }
 }
 
 // --- IMPORT LOGIC ---
@@ -1644,7 +1668,7 @@ function convertChordsOverLyrics(text) {
                 if (nextTrimmed.length > 0 && !isChordLine(nextLine) && !sectionHeaderRegex.test(nextLine)) {
                     // Merge chord line with lyric line
                     // Usamos las líneas originales para calcular la posición correcta
-                    output.push(mergeLines(line, nextLine).trim());
+                    output.push(mergeLines(line, nextLine).replace(/[ \t]+$/, ''));
                     i++; // Skip the next line as it's already processed
                     continue;
                 }

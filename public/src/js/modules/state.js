@@ -22,7 +22,5 @@ export const state = {
     // UI State
     currentFontSize: 15,
     isSelectionMode: false,
-    scrollInterval: null,
-    scrollSpeedMs: 50,
     returnToView: 'view-songs'
 };

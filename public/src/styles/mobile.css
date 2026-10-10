@@ -22,6 +22,37 @@
     body.in-song .bottom-nav { display: none !important; }
     body.in-song { padding-bottom: 0 !important; }
     body.in-song::after { display: none !important; }
+    body.in-song.has-song-sequence { padding-bottom: 0 !important; }
+    body.in-song.has-song-sequence .song-sequence-nav {
+        position: fixed;
+        left: 0;
+        right: 0;
+        top: calc(52px + env(safe-area-inset-top, 0px));
+        bottom: auto;
+        z-index: 9979;
+        max-width: none;
+        margin: 0;
+        padding: .35rem .75rem;
+        border-radius: 0;
+        border-width: 0 0 1px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, .12);
+    }
+    body.in-song.has-song-sequence .song-sequence-nav .btn { flex: 1; }
+    #view-song-detail .song-tools-bar,
+    body.in-song.has-song-sequence .song-sequence-nav {
+        transition: transform 160ms ease-out;
+    }
+    body.reading-controls-hidden #view-song-detail .song-tools-bar,
+    body.reading-controls-hidden.in-song.has-song-sequence .song-sequence-nav {
+        transform: translateY(-110%);
+        pointer-events: none;
+    }
+    #view-song-detail .song-sequence-nav .btn {
+        flex: 0 0 42px;
+        width: 42px;
+        min-width: 42px;
+        padding: .45rem !important;
+    }
     /* HIDE bottom nav when a modal is open */
     body.modal-open-navbar-hidden .bottom-nav { display: none !important; }
     body.modal-open-navbar-hidden { padding-bottom: 0 !important; }
@@ -47,7 +78,7 @@
     /* ── Song tools bar: FIXED AT TOP on mobile ── */
     .song-tools-bar {
         position: fixed !important;
-        top: 0 !important;
+        top: env(safe-area-inset-top, 0px) !important;
         bottom: auto !important;
         left: 0 !important;
         right: 0 !important;
@@ -62,22 +93,31 @@
         border-right: none !important;
     }
     /* Add top padding to content so it doesn't hide behind toolbar */
-    #view-song-detail { padding-top: 56px; padding-bottom: 1.5rem; }
+    #view-song-detail {
+        padding-top: calc(56px + env(safe-area-inset-top, 0px));
+        padding-bottom: 1.5rem;
+    }
+    body.has-song-sequence #view-song-detail {
+        padding-top: calc(108px + env(safe-area-inset-top, 0px));
+    }
     #view-repertoire-detail .song-tools-bar {
         position: fixed !important;
-        top: 0 !important;
+        top: env(safe-area-inset-top, 0px) !important;
         bottom: auto !important;
         left: 0 !important;
         right: 0 !important;
         border-radius: 0 !important;
         z-index: 9999 !important;
-        background: #fff !important;
+        background: var(--c-surface) !important;
         box-shadow: 0 2px 12px rgba(0,0,0,.10) !important;
         border-bottom: 2px solid #e0e0e0 !important;
         padding-top: .5rem !important;
         padding-bottom: .5rem !important;
     }
-    #view-repertoire-detail { padding-top: 70px; }
+    [data-theme="dark"] #view-repertoire-detail .song-tools-bar {
+        border-bottom-color: var(--c-border) !important;
+    }
+    #view-repertoire-detail { padding-top: calc(70px + env(safe-area-inset-top, 0px)); }
     /* Selector de tema más visible en móvil */
     #rep-theme-select {
         font-size: 1.1rem !important;
@@ -194,8 +234,13 @@
     }
     .toast { min-width: unset; max-width: 100%; width: 100%; }
 
-    /* Lyrics */
-    .lyrics-container { padding: .85rem !important; }
+    /* Lyrics remain readable without horizontal scrolling on narrow screens. */
+    .lyrics-container { padding: .85rem !important; overflow-x: hidden; }
+    .line-wrapper { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .line-wrapper.chord-only-line { overflow-wrap: normal; }
+
+    #view-profile .card-body { padding: 1.1rem !important; }
+    .settings-preference-row { padding: .85rem !important; }
 }
 
 @media (min-width: 768px) {

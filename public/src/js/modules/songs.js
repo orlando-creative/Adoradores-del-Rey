@@ -1,6 +1,6 @@
 import { state } from './state.js';
 import { supabase } from '../supabaseClient.js';
-import { changeFontSize, closeNavbar, showToast, showView, toggleAutoScroll, toggleLoading, toggleLyricsOnly } from './ui.js';
+import { changeFontSize, closeNavbar, showToast, showView, toggleLoading, toggleLyricsOnly } from './ui.js';
 
 export function filterSongsList(e) {
     const term = e.target.value.toLowerCase().trim();

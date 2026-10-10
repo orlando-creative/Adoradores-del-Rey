@@ -1,0 +1,466 @@
+DOCUMENTACION DEL SISTEMA: ADORADORES DEL REY
+=================================================================
+
+INFORMACION GENERAL
+-----------------------------------------------------------------
+Este proyecto es una aplicación web para gestionar canciones, repertorios y material de culto para una iglesia. Su propósito principal es permitir organizar himnos, alabanzas, canciones de adoración, repertorios de servicio, y facilitar la lectura y uso durante reuniones, ministerios y presentaciones en vivo.
+
+La app está enfocada en un uso muy práctico en móvil, aunque actualmente está implementada como una PWA/web app con HTML, CSS y JavaScript. Tiene estructura pensada para ser migrada a una app móvil nativa o híbrida (React Native/Expo, Flutter, Capacitor, etc.), manteniendo la misma lógica de negocio y modelo de datos.
+
+OBJETIVO DEL SISTEMA
+-----------------------------------------------------------------
+- Gestionar un catálogo de canciones para la iglesia.
+- Organizar repertorios por fecha, hora, director, servicio y sección.
+- Permitir visualizar letras con acordes, transposición de tonos, zoom y modo solo letra.
+- Facilitar la preparación de reuniones musicales.
+- Apoyar la administración de usuarios con perfiles y roles.
+- Exportar contenido visual a imagen PNG.
+- Mantener datos centralizados en Supabase.
+
+STACK TECNOLOGICO
+-----------------------------------------------------------------
+Frontend:
+- HTML5
+- CSS3
+- JavaScript ES6
+- Bootstrap 5 (para componentes y layout)
+- Live Server para ejecución local
+
+Backend / Base de datos:
+- Supabase
+- PostgreSQL
+- Auth de Supabase para login/registro
+
+Librerías y utilidades:
+- @supabase/supabase-js
+- html2canvas para exportar PNG
+- PWA / Service Worker para comportamiento tipo app móvil
+
+ESTRUCTURA DEL REPOSITORIO
+-----------------------------------------------------------------
+/
+├── api/
+│   └── webhook/
+│       └── index.js
+│           - Endpoint o webhook para integración con Supabase o workflows externos.
+│
+├── public/
+│   ├── index.html
+│   │   - Pantalla principal de la app web.
+│   │   - Aquí están todas las vistas: inicio, canciones, repertorios, perfil, modales.
+│   │
+│   ├── login.html
+│   │   - Login de usuarios.
+│   │
+│   ├── register.html
+│   │   - Registro de nuevos usuarios.
+│   │
+│   ├── manifest.json
+│   │   - Configuración PWA para instalarla como app web / móvil.
+│   │
+│   ├── logoADR.jpeg
+│   │   - Ícono / branding del sistema.
+│   │
+│   └── src/
+│       ├── js/
+│       │   ├── app.js
+│       │   │   - Archivo principal del sistema.
+│       │   │   - Tiene toda la lógica de navegación, carga de datos, carga de vistas,
+│       │   │    manejo de canciones y repertorios, importación, transposición, exportación,
+│       │   │    drag & drop, acciones de admin, etc.
+│       │   │
+│       │   ├── auth.js
+│       │   │   - Login, registro, logout, reset password y perfil actual.
+│       │   │
+│       │   ├── chords-render.js
+│       │   │   - Renderiza acordes y letras en la vista detallada de una canción.
+│       │   │
+│       │   ├── transpose.js
+│       │   │   - Lógica para transposición musical (cambio de tonalidad).
+│       │   │
+│       │   ├── router.js
+│       │   │   - Posible lógica de navegación/routers, aunque no central en la app actual.
+│       │   │
+│       │   ├── supabaseClient.js
+│       │   │   - Cliente de Supabase reutilizado o legado.
+│       │   │
+│       │   ├── sw.js
+│       │   │   - Service Worker para PWA.
+│       │   │
+│       │   ├── auth/
+│       │   │   ├── auth-ui.js
+│       │   │   └── auth.js
+│       │   │
+│       │   ├── modules/
+│       │   │   ├── ajaxLoader.js
+│       │   │   ├── dragToDismiss.js
+│       │   │   ├── export.js
+│       │   │   ├── state.js
+│       │   │   ├── ui.js
+│       │   │   ├── songs/
+│       │   │   │   ├── songs.js
+│       │   │   │   └── songs-ui.js
+│       │   │   └── repertoire/
+│       │   │       ├── repertoire.js
+│       │   │       └── repertoire-ui.js
+│       │   │
+│       │   ├── services/
+│       │   │   ├── supabaseClient.js
+│       │   │   └── exportPng.js
+│       │   │
+│       │   └── utils/
+│       │       └── validators.js
+│       │
+│       ├── styles/
+│       │   ├── main.css
+│       │   └── mobile.css
+│       │
+│       └── templates/
+│           ├── repertoire-item.html
+│           └── song-item.html
+│
+├── supabase/
+│   ├── schema.sql
+│   ├── policies.sql
+│   ├── seed.sql
+│   └── migrations/
+│       ├── 001_init.sql
+│       └── 002_fix_schema.sql
+│
+├── package.json
+├── README.md
+├── LICENSE
+├── DOCUMENTACION_SISTEMA_ADORADORES_DEL_REY.txt
+└── .gitignore
+
+SISTEMA DE VISTAS / SECCIONES PRINCIPALES
+-----------------------------------------------------------------
+La app está construida con varias vistas que se muestran/ocultan según la navegación y el estado del usuario:
+
+1. VIEW HOME (Inicio / Dashboard)
+- Pantalla principal al entrar a la app.
+- Muestra bienvenida al usuario.
+- Muestra estadísticas rápidas:
+  - cantidad de canciones
+  - cantidad de repertorios
+- Muestra repertorios recientes.
+- Tiene accesos rápidos para buscar canciones o repertorios.
+- Sirve como dashboard del sistema y central de navegación.
+
+2. VIEW SONGS (Lista de canciones)
+- Muestra colección completa de canciones organizadas por categorías/tabs:
+  - Himnos
+  - Júbilo
+  - Adoración
+  - Niños
+- Tiene buscador por título, autor o contenido.
+- Se puede entrar en modo selección para eliminar varias canciones.
+- Solo admins pueden ver acciones de crear/editar/eliminar (según clase admin-only).
+- Hay soporte para ordenar por título y por numeración de himnos.
+
+3. VIEW SONG DETAIL (Detalle de canción)
+- Se abre al seleccionar una canción.
+- Muestra el título, la letra y los acordes.
+- Incluye herramientas de lectura:
+  - transposición de tonalidad
+  - aumento/disminución de fuente
+  - modo solo letra
+  - autoscroll
+  - exportar a imagen PNG
+  - editar o eliminar canción (admin)
+- Si la canción tiene URL de YouTube, se muestra video embebido.
+- Los himnos también admiten guardar y editar su enlace de YouTube.
+- Al abrir una canción desde un repertorio, hay controles anterior/siguiente en la parte superior para recorrerlo.
+
+4. VIEW REPERTOIRES (Lista de repertorios)
+- Muestra repertorios creados con fecha, hora y director.
+- Se listan en tarjetas.
+- Cada repertorio representa un servicio o reunión musical.
+
+5. VIEW REPERTOIRE DETAIL (Detalle de repertorio)
+- Muestra título, fecha, hora, uniforme, director, coristas, teclado, guitarra, batería, bajo.
+- Lista canciones que pertenecen a ese repertorio agrupadas por sección:
+  - HIMNOS DE GLORIA Y TRIUNFO
+  - ALABANZAS DE JUBILO
+  - ALABANZAS DE ADORACION
+  - OFRENDA
+  - NIÑOS
+- Permite organizar canciones por orden y section.
+- Permite cambiar tono por canción dentro del repertorio.
+- Permite eliminar canciones del repertorio.
+- Permite editar el repertorio y guardar cambios.
+
+6. VIEW PROFILE
+- Muestra información del usuario.
+- Permite editar nombre, rol y contraseña.
+- Solo administradores pueden cambiar el rol.
+
+MODALES IMPORTANTES
+-----------------------------------------------------------------
+El sistema usa modales Bootstrap para muchas acciones:
+
+- songModal: crear/editar una canción.
+- repertoireModal: crear un repertorio.
+- addSongModal: agregar canción a un repertorio.
+- transposeModal: cambiar tonalidad de la canción actual.
+- importModal: importar texto o contenido para convertirlo a estructura de letra+acordes.
+- bulkImportModal: importación masiva de archivos .txt.
+
+MODELO DE DATOS / BASE DE DATOS
+-----------------------------------------------------------------
+La base de datos está en Supabase con las siguientes tablas clave:
+
+1. profiles
+- id: UUID (relación con auth.users)
+- nombre: nombre del usuario
+- rol: rol del usuario (user/admin)
+- created_at / updated_at
+
+2. songs
+- id: UUID
+- titulo: título de la canción
+- autor: autor o nombre del tema
+- tono_original: tonalidad original
+- tipo: categoría (himno, jubilo, adoracion, ninos, ofrenda, etc.)
+- youtube_url: enlace de video opcional
+- letra_acordes: texto con letras y acordes
+- created_by: usuario creador
+- created_at / updated_at
+
+3. repertoires
+- id: UUID
+- titulo: nombre del repertorio o servicio
+- fecha: fecha del servicio
+- hora: hora del servicio
+- director: responsable musical
+- uniforme: descripción del uniforme
+- coristas: coristas asignados
+- teclado: músico de teclado
+- guitarra: músico de guitarra
+- bateria: músico de batería
+- bajo: músico de bajo
+- created_by: usuario creador
+- tema: theme del repertorio (estilo visual)
+- created_at, updated_at
+
+4. repertoire_songs
+- id: UUID
+- repertoire_id: relación con repertorio
+- song_id: relación con canción
+- orden: posición de la canción en el repertorio
+- section: sección del repertorio donde va la canción
+- tono: tonalidad específica para esa canción dentro del repertorio
+- created_at
+
+RELACIONES
+-----------------------------------------------------------------
+- Un usuario muchas veces puede crear varias canciones.
+- Un usuario puede crear varios repertorios.
+- Un repertorio contiene muchas canciones a través de repertoire_songs.
+- Una canción puede aparecer en varios repertorios.
+- Cada vínculo de canción en repertorio puede definir tono y orden específicos.
+
+FUNCIONALIDADES DEL SISTEMA
+-----------------------------------------------------------------
+1. Autenticación
+- Registro con email + contraseña + nombre.
+- Login con email y password.
+- Perfil asociado con Supabase Auth.
+- Cierre de sesión y redirección a login.html.
+
+2. Administración de perfiles
+- Nombre visible en app.
+- Rol admin/user.
+- Cambio de contraseña.
+- Perfil principal para cada usuario.
+
+3. Gestión de canciones
+- Crear nueva canción.
+- Editar canción existente.
+- Eliminar canción.
+- Buscar canciones por nombre/autor.
+- Ordenar por categorías.
+- Validar tonalidad con regex.
+- Permitir video de YouTube opcional.
+- Guardar contenido de letras con acordes en formato texto.
+
+4. Gestión de repertorios
+- Crear repertorio con fecha/hora/título y músicos.
+- Editar información del repertorio.
+- Eliminar repertorio.
+- Agregar canciones desde el catálogo a un repertorio.
+- Definir sección y orden dentro del repertorio.
+- Reordenar canciones con drag and drop.
+- Cambiar la tonalidad de una canción en un repertorio específico.
+- Mostrar repertorios recientes en el dashboard.
+
+5. Visualización musical
+- Renderizado de acordes en pantalla.
+- Modo solo letra.
+- Cambio de tamaño de texto.
+- Autoscroll para lectura en vivo.
+- Botón para transponer la canción a otra tonalidad.
+- Muestra acorde actual en botón de transposición.
+
+6. Importación de letras y acordes
+- Importación desde texto manual.
+- Conversión automática de líneas tipo:
+  - acordes + letras
+  - secciones como verso, coro, puente
+  - contenido de otras fuentes
+- Importación masiva desde archivos .txt.
+- Detección de tonalidades y metadatos.
+
+7. Exportación y uso práctico
+- Exportación de la vista de canción o repertorio como PNG.
+- Optimización para pantalla móvil.
+- Diseño tipo app con navegación simple.
+- PWA para instalar "como app" desde navegador.
+
+8. Personalización visual
+- Temas de repertorio (theme-morning, theme-night, etc.)
+- Cambio de tema guardado en BD para cada repertorio.
+- Soporte de modo oscuro mediante almacenamiento local.
+- Ajustes de apariencia y perfil adaptados a móvil y al tema activo.
+- Los acordes importados conservan su posición sobre las sílabas correspondientes.
+
+FLUJO DE USO TÍPICO
+-----------------------------------------------------------------
+1. Usuario inicia sesión.
+2. Sistema carga perfil y datos del usuario.
+3. En Inicio visualiza dashboard con estadísticas y repertorios recientes.
+4. Desde Canciones puede buscar, abrir y leer letras.
+5. Desde Repertorios puede crear un servicio o reunión musical.
+6. Agrega canciones al repertorio con sección y tonalidad.
+7. Puede reordenarlas y ajustar detalles.
+8. En la vista detalle puede leer la canción con transposición, letra sola, auto-scroll.
+9. Puede exportar la vista o compartirla visualmente.
+10. El sistema almacena todo en Supabase.
+
+LOGICA IMPORTANTE DEL FRONTEND
+-----------------------------------------------------------------
+El archivo principal app.js contiene gran parte de la lógica central:
+
+- Inicialización del DOM y autenticación al cargar.
+- Navegación entre vistas con showView().
+- Carga de datos y consulta a Supabase.
+- Renderizar listas de canciones y repertorios.
+- Abrir vista de detalle de canción y recorridos.
+- Guardar/editar canciones y repertorios.
+- Validaciones sobre claves y formularios.
+- Drag and drop para reordenar canciones en repertorio.
+- Importar archivos TXT y convertir texto.
+- Operaciones administrativas.
+
+También existen módulos especializados:
+
+- modules/ui.js
+  - showToast, showView, cambios de vista, skeletons, auto-scroll, tamaño de letra.
+
+- modules/state.js
+  - estado compartido de la app para evitar dependencias circulares.
+
+- modules/export.js
+  - lógica para exportar contenido visual a PNG.
+
+- modules/songs/songs.js
+  - acceso a canciones en base de datos.
+
+- modules/repertoire/repertoire.js
+  - acceso a repertorios y catálogo relacionado.
+
+- auth.js
+  - autenticación y gestión de perfiles.
+
+- services/supabaseClient.js
+  - conexión con Supabase.
+
+PATRONES DE UX Y DISENO
+-----------------------------------------------------------------
+- El sistema está pensado para ser usado principalmente desde móvil.
+- Hay navegación tipo tabs y bottom nav (aunque el HTML muestra una navegación superior con estilo app).
+- Se trabaja con botones grandes, toque en una sola mano, elementos compactos.
+- Tiene una lógica de historial con history.pushState para navegación nativa móvil.
+- Hay soporte para swipe horizontal en tabs de canciones.
+- Hay diseño responsive con CSS específico para mobile.
+- Existen estilos de modo oscuro y de lectura de letra.
+
+OBSERVACIONES IMPORTANTES PARA MIGRACION A APP MOVIL
+-----------------------------------------------------------------
+1. El sistema actual funciona como PWA y no como app nativa real.
+2. El mayor valor del negocio está en:
+   - catálogo de canciones
+   - gestion de repertorios
+   - visualización de letras con acordes
+   - transposición musical
+   - edición/admin
+3. Se recomienda mantener la misma estructura de datos y Supabase como backend.
+4. El archivo app.js es monolítico. Para móvil lo ideal es separarlo en módulos por dominio:
+   - auth
+   - songs
+   - repertoires
+   - profile
+   - import
+   - music-tools
+5. Implementar una capa de servicio API con Supabase client centralizado.
+6. Mantener la lógica de transposición y render de acorde/lyrics en un componente reutilizable.
+7. La navegación de vistas web se puede convertir a:
+   - Stack navigator (React Native)
+   - Bottom tabs + stack screens
+   - Pantallas: Home, Canciones, Repertorio, Perfil
+8. Los modal windows se convierten a bottom sheets, dialogs o screens modales.
+9. La importación masiva y exportación PNG deben adaptarse a APIs de mobile.
+10. Las funciones de drag & drop entre listas se convierten a gestos o acciones de mover elementos.
+
+RECOMENDACION DE MAPEADO A APP MOVIL
+-----------------------------------------------------------------
+Pantallas recomendadas:
+- Login / Registro
+- Home Dashboard
+- Lista de Canciones (con tabs por tipo)
+- Detalle de Canción
+- Lista de Repertorios
+- Detalle de Repertorio
+- Agregar/Editar Canción
+- Agregar/Editar Repertorio
+- Perfil / Configuración
+
+Modelos de datos recomendados:
+- UserProfile
+- Song
+- Repertoire
+- RepertoireSong
+
+Flujos clave:
+- login
+- fetchSongs
+- fetchRepertoires
+- openSong
+- addSongToRepertoire
+- saveRepertoire
+- renderLyricsWithChords
+- transposeSong
+- exportPNG
+
+Arquitectura recomendable para una app móvil:
+- Frontend móvil: React Native + Expo, o Flutter
+- Base de datos y auth: Supabase
+- Storage: Supabase Storage si se agregan imágenes/archivos
+- Estado global: Zustand, Redux, Context, Provider, Riverpod
+- Navegación: React Navigation / Expo Router / Flutter Router
+
+DEUDA TECNICA / PUNTOS A REVISAR PARA MIGRACION
+-----------------------------------------------------------------
+- app.js es muy grande y mezcla UI, lógica de negocio y navegación.
+- El archivo supabaseClient.js tiene placeholders 'your-project-url' / 'your-anon-public-key' que deben reemplazarse por variables reales.
+- Existen varias funciones y módulos que parecen haber sido migrados parcialmente, con lógica legacy mezclada con lógica modular.
+- El valor de categorias/tipos de canciones está parcialmente duplicado entre UI y base de datos.
+- La importación masiva está muy enfocada en archivos TXT y es una buena base para migrar a un importador más robusto.
+- El sistema está muy centrado en web, pero el flujo de usuarios y datos ya está bien definido para convertirlo a móvil.
+
+RESUMEN EJECUTIVO
+-----------------------------------------------------------------
+Este sistema es un gestor de música de iglesia con foco en lectura, preparación de servicios y administración de repertorios. Actualmente está implementado como una PWA web con Supabase como backend. Tiene una clara separación por entidades (usuarios, canciones, repertorios, canciones dentro de repertorios), y su lógica principal está centrada en tres grandes módulos: autenticación, canciones y repertorios. La mayor parte de su valor funcional ya está definida y es adecuada para ser convertida a una app móvil con la misma base de datos y lógica de negocio, manteniendo la experiencia del usuario en un entorno más natural para uso en reuniones, iglesia, reuniones musicales y servicio en vivo.
+
+ESTE DOCUMENTO FUE GENERADO PARA QUE OTRA IA PUEDA ENTENDER EL SISTEMA Y CONVERTIRLO EN APLICACION MOVIL.
+=================================================================
